@@ -3,8 +3,9 @@ This module contains the NodeData class for storing basic node data.
 """
 
 import maya.api.OpenMaya as om
+import maya.cmds as cmds
 
-class NodeData(object):
+class NodeData:
     """
     Represents data associated with a node in Maya.
 
@@ -30,8 +31,7 @@ class NodeData(object):
         Raises:
             TypeError: If no node is assigned.
         """
-        super(NodeData, self).__init__()
-
+        
         if not node:
             raise TypeError('No node assigned')
 
@@ -63,6 +63,7 @@ class NodeData(object):
         Returns:
             om.MObject: The MObject for the node.
         """
+
         return om.MGlobal.getSelectionListByName(self.node).getDependNode(0)
 
     def __get_dag_path(self):
@@ -72,6 +73,7 @@ class NodeData(object):
         Returns:
             om.MDagPath: The MDagPath for the node.
         """
+
         return om.MGlobal.getSelectionListByName(self.node).getDagPath(0)
 
     def __get_shape(self):

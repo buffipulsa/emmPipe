@@ -1,174 +1,56 @@
-""" ********************************************************************
-content      = This module contains a class for exporting/importing skincluster data
 
-version      = 1.0.2
-date         = 2023-05-15
 
-how to       = skincluster.NodeData(obj), skincluster.SkinclusterData(obj)
-dependencies = json
-
-author       = Einar Mar Magnusson (einarmarmagnuss@gmail.com)
-******************************************************************** """
 import os
+import json
 
 import maya.api.OpenMaya as om
 import maya.api.OpenMayaAnim as oma
 import maya.cmds as cmds
 
-import json
-
-class NodeData(object):
-    """ Stores basic node data """
-    def __init__(self, node=None):
-        super(NodeData, self).__init__()
-
-        if not node:
-            raise TypeError('No node assigned')
-
-        self.node = node
-
-        # --- Object data
-        self.mobj          = self.__get_mobj()
-        self.dag_path      = self.__get_dag_path()
-
-        # --- Shape data
-        self.shape         = self.__get_shape()
-        # self.shapeComponent = self.__getShapeComponent()
-
-        # --- Function set data
-        self.transform_fn  = self.__get_transform_fn()
-        self.shape_fn      = self.__get_shape_fn()
-
-        # --- Vtx data
-        self.vtx_component = self.__get_vtx_component()
-        self.vtx_ids       = self.__get_vtx_ids()
-        self.vtx_count     = self.__get_vtx_count()
-
-        return
-
-    # ======================================================================
-    def __get_mobj(self):
-        return om.MGlobal.getSelectionListByName(self.node).getDependNode(0)
-
-    def __get_dag_path(self):
-        return om.MGlobal.getSelectionListByName(self.node).getDagPath(0)
-
-    def __get_shape(self):
-        shape = None
-
-        try:
-            shape = om.MGlobal.getSelectionListByName(self.node).getDagPath(0).extendToShape()
-        except:
-            shape = None
-
-        return shape
-
-    def __get_transform_fn(self):
-        fn_set = None
-
-        if self.dag_path.apiType() == om.MFn.kTransform:
-            fn_set = om.MFnTransform(self.dag_path)
-
-        return fn_set
-
-    def __get_shape_fn(self):
-        fn_set = None
-
-        if self.shape:
-            if self.shape.apiType() == om.MFn.kMesh:
-                fn_set = om.MFnMesh(self.dag_path)
-
-            if self.shape.apiType() == om.MFn.kNurbsCurve:
-                fn_set = om.MFnNurbsCurve(self.dag_path)
-
-            if self.shape.apiType() == om.MFn.kNurbsSurface:
-                fn_set = om.MFnNurbsSurface(self.dag_path)
-
-        return fn_set
-
-    def __get_vtx_component(self):
-        vtx_component = None
-
-        if self.shape:
-            if self.shape.apiType() == om.MFn.kMesh:
-                comp = om.MFnSingleIndexedComponent()
-                vtx_component = comp.create(om.MFn.kMeshVertComponent)
-                comp.setCompleteData(self.shape_fn.numVertices)
-
-            if self.shape.apiType() == om.MFn.kNurbsCurve:
-                comp = om.MFnSingleIndexedComponent()
-                vtx_component = comp.create(om.MFn.kCurveCVComponent)
-                comp.setCompleteData(self.shape_fn.numCVs)
-
-            if self.shape.apiType() == om.MFn.kNurbsSurface:
-                comp = om.MFnDoubleIndexedComponent()
-                vtx_component = comp.create(om.MFn.kSurfaceCVComponent)
-                comp.setCompleteData(self.shape_fn.numCVsInU, self.shape_fn.numCVsInV)
-
-        return vtx_component
-
-    def __get_vtx_ids(self):
-        vtx_ids = None
-
-        if self.shape:
-            if self.shape.apiType() == om.MFn.kMesh:
-                vtx_ids = range(0, len(cmds.ls('{}.vtx[*]'.format(self.node), fl=True)))
-            else:
-                vtx_ids = range(0, len(cmds.ls('{}.cv[*]'.format(self.node), fl=True)))
-
-        return vtx_ids
-
-    def __get_vtx_count(self):
-        vtx_count = None
-
-        if self.vtx_ids:
-            vtx_count = len(self.vtx_ids)
-
-        return vtx_count
-
+from emmPipe.rig.objects.object_data import NodeData
 
 class SkinclusterData(NodeData):
     """ Stores skincluster data from node. Needs NodeData class as parent. """
-    def __init__(self, node=None, skinclusterNode=None):
+    def __init__(self, node=None, skincluster_node=None):
         super(SkinclusterData, self).__init__(node)
 
-        self.skinclusterNode = skinclusterNode
+        self.skincluster_node = skincluster_node
 
-        self.skinclusterName = 'skinCluster_{}'.format(self.node)
+        self.skincluster_name = 'skinCluster_{}'.format(self.node)
 
         # --- Skincluster data
-        self.skincluster         = self.__getSkincluster()
-        self.skinclusterFn       = self.__getSkinclusterFn()
-        self.influenceNames      = self.__getSkinclusterInfluenceNames()
-        self.influenceIndices    = self.__getSkinclusterInfluenceIndices()
-        self.bindPreMatrixValues = self.__getBindPreMatrixValues()
-        self.bindPreMatrixInputs = self.__getBindPreMatrixInputs()
+        self.skincluster         = self._get_skincluster()
+        self.skincluster_fn      = self._get_skincluster_fn()
+        self.influence_names     = self._get_skincluster_influence_names()
+        self.influence_indices   = self._get_skincluster_influence_indices()
+        self.bind_pre_matrix_values = self._get_bind_pre_matrix_values()
+        self.bind_pre_matrix_inputs = self._get_bind_pre_matrix_inputs()
 
         # --- Skincluster weights data
-        self.weights      = self.__getSkinclusterWeights()
-        self.blendWeights = self.__getSkinclusterBlendWeights()
+        self.weights      = self._get_skincluster_weights()
+        self.blend_weights = self._get_skincluster_blend_weights()
 
         # --- Skincluster settings data
-        self.envelope          = self.__getSkinclusterAttrValue(attr='envelope')
-        self.skinningMethod    = self.__getSkinclusterAttrValue(attr='skinningMethod')
-        self.useComponents     = self.__getSkinclusterAttrValue(attr='useComponents')
-        self.normalizeWeights  = self.__getSkinclusterAttrValue(attr='normalizeWeights')
-        self.deformUserNormals = self.__getSkinclusterAttrValue(attr='deformUserNormals')
+        self.envelope          = self._get_skincluster_attr_value(attr='envelope')
+        self.skinning_method   = self._get_skincluster_attr_value(attr='skinningMethod')
+        self.use_components    = self._get_skincluster_attr_value(attr='useComponents')
+        self.normalize_weights = self._get_skincluster_attr_value(attr='normalizeWeights')
+        self.deform_user_normals = self._get_skincluster_attr_value(attr='deformUserNormals')
 
         return
 
-    # ======================================================================
-    def __getSkincluster(self):
 
-        if self.skinclusterNode:
-            skincls = self.skinclusterNode
+    def _get_skincluster(self):
+
+        if self.skincluster_node:
+            skincls = self.skincluster_node
         else:
             skincls = None
 
             if self.shape:
                 try:
                     skincls = cmds.ls(cmds.listHistory(self.dag_path.fullPathName()),
-                                      type='skinCluster')[0]
+                                        type='skinCluster')[0]
                 except:
                     raise TypeError('{} does not have a skincluster node!'.format(self.shape))
 
@@ -182,47 +64,47 @@ class SkinclusterData(NodeData):
 
         return skincls
 
-    def __getSkinclusterFn(self):
+    def _get_skincluster_fn(self):
         skincluster_mobj = om.MGlobal.getSelectionListByName(self.skincluster).getDependNode(0)
         skincls_fn = oma.MFnSkinCluster(skincluster_mobj)
 
         return skincls_fn
 
-    def __getSkinclusterInfluenceNames(self):
-        influenceNames = [infl.partialPathName() for infl in self.skinclusterFn.influenceObjects()]
+    def _get_skincluster_influence_names(self):
+        influence_names = [infl.partialPathName() for infl in self.skincluster_fn.influenceObjects()]
 
-        return influenceNames
+        return influence_names
 
-    def __getSkinclusterInfluenceIndices(self):
-        mObjInfluences = self.skinclusterFn.influenceObjects()
+    def _get_skincluster_influence_indices(self):
+        m_obj_influences = self.skincluster_fn.influenceObjects()
 
         influences = om.MIntArray()
-        for influence in range(len(mObjInfluences)):
+        for influence in range(len(m_obj_influences)):
             influences.append(influence)
 
         return influences
 
-    def __getSkinclusterAttrValue(self, attr):
+    def _get_skincluster_attr_value(self, attr):
         attr_value = cmds.getAttr('{}.{}'.format(self.skincluster, attr))
 
         return attr_value
 
-    def __getSkinclusterWeights(self):
-        weights, _ = self.skinclusterFn.getWeights(self.shape, self.vtx_component)
+    def _get_skincluster_weights(self):
+        weights, _ = self.skincluster_fn.getWeights(self.shape, self.vtx_component)
 
         return weights
 
-    def __getSkinclusterBlendWeights(self):
-        blendWeights = self.skinclusterFn.getBlendWeights(self.shape, self.vtx_component)
+    def _get_skincluster_blend_weights(self):
+        blendWeights = self.skincluster_fn.getBlendWeights(self.shape, self.vtx_component)
 
         return blendWeights
 
-    def __getBindPreMatrixValues(self):
-        bindPreMatrixValues = [cmds.getAttr('{}.bindPreMatrix[{}]'.format(self.skincluster, i)) for i in self.influenceIndices]
+    def _get_bind_pre_matrix_values(self):
+        bindPreMatrixValues = [cmds.getAttr('{}.bindPreMatrix[{}]'.format(self.skincluster, i)) for i in self.influence_indices]
 
         return bindPreMatrixValues
 
-    def __getBindPreMatrixInputs(self):
+    def _get_bind_pre_matrix_inputs(self):
         bindPreMatrixInputs = cmds.listConnections('{}.bindPreMatrix'.format(self.skincluster),
                                                    source=True, destination=False) or []
 
