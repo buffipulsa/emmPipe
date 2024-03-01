@@ -7,9 +7,9 @@ import maya.api.OpenMaya as om
 import maya.api.OpenMayaAnim as oma
 import maya.cmds as cmds
 
-from emmPipe.rig.objects.object_data import NodeData
+from emmPipe.rig.objects.object_data import ObjectData
 
-class SkinclusterData(NodeData):
+class SkinclusterData(ObjectData):
     """ Stores skincluster data from node. Needs NodeData class as parent. """
     def __init__(self, node=None, skincluster_node=None):
         super(SkinclusterData, self).__init__(node)

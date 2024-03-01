@@ -5,13 +5,15 @@ This module contains the NodeData class for storing basic node data.
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
-class NodeData:
+class ObjectData:
     """
-    Represents data associated with a node in Maya.
+    Represents an object in the scene.
 
     Attributes:
         node (str): The name of the node.
-        mobj (om.MObject): The MObject for the node.
+
+    Properties:
+        m_obj (om.MObject): The MObject for the node.
         dag_path (om.MDagPath): The MDagPath for the node.
         shape (om.MDagPath): The shape node for the node.
         transform_fn (om.MFnTransform): The MFnTransform for the node.
@@ -23,7 +25,7 @@ class NodeData:
 
     def __init__(self, node=None):
         """
-        Initializes a new instance of the NodeData class.
+        Initializes a new instance of the ObjectData class.
 
         Args:
             node (str): The name of the node.
@@ -37,26 +39,10 @@ class NodeData:
 
         self.node = node
 
-        # --- Object data
-        self.mobj          = self.__get_mobj()
-        self.dag_path      = self.__get_dag_path()
-
-        # --- Shape data
-        self.shape         = self.__get_shape()
-        # self.shapeComponent = self.__getShapeComponent()
-
-        # --- Function set data
-        self.transform_fn  = self.__get_transform_fn()
-        self.shape_fn      = self.__get_shape_fn()
-
-        # --- Vtx data
-        self.vtx_component = self.__get_vtx_component()
-        self.vtx_ids       = self.__get_vtx_ids()
-        self.vtx_count     = self.__get_vtx_count()
-
         return
 
-    def __get_mobj(self):
+    @property
+    def m_obj(self):
         """
         Retrieves the MObject for the node.
 
@@ -66,7 +52,8 @@ class NodeData:
 
         return om.MGlobal.getSelectionListByName(self.node).getDependNode(0)
 
-    def __get_dag_path(self):
+    @property
+    def dag_path(self):
         """
         Retrieves the MDagPath for the node.
 
@@ -76,7 +63,8 @@ class NodeData:
 
         return om.MGlobal.getSelectionListByName(self.node).getDagPath(0)
 
-    def __get_shape(self):
+    @property
+    def shape(self):
         """
         Retrieves the shape node for the node.
 
@@ -92,7 +80,8 @@ class NodeData:
 
         return shape
 
-    def __get_transform_fn(self):
+    @property
+    def transform_fn(self):
         """
         Retrieves the MFnTransform for the node.
 
@@ -106,7 +95,8 @@ class NodeData:
 
         return fn_set
 
-    def __get_shape_fn(self):
+    @property
+    def shape_fn(self):
         """
         Retrieves the MFnMesh, MFnNurbsCurve, or MFnNurbsSurface for the shape node.
 
@@ -127,7 +117,8 @@ class NodeData:
 
         return fn_set
 
-    def __get_vtx_component(self):
+    @property
+    def vtx_component(self):
         """
         Retrieves the vertex component for the shape node.
 
@@ -154,7 +145,8 @@ class NodeData:
 
         return vtx_component
 
-    def __get_vtx_ids(self):
+    @property
+    def vtx_ids(self):
         """
         Retrieves the vertex IDs for the shape node.
 
@@ -171,7 +163,8 @@ class NodeData:
 
         return vtx_ids
 
-    def __get_vtx_count(self):
+    @property
+    def vtx_count(self):
         """
         Retrieves the vertex count for the shape node.
 
