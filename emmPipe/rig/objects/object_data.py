@@ -1,6 +1,3 @@
-"""
-This module contains the NodeData class for storing basic node data.
-"""
 
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
@@ -11,13 +8,20 @@ class ObjectData:
     """
 
     def __init__(self, node=None):
+        """
+        Initialize the ObjectData instance.
+
+        Args:
+            node (str): The name of the node.
+
+        Raises:
+            TypeError: If no node is assigned.
+        """
         
         if not node:
             raise TypeError('No node assigned')
 
         self._node = node
-
-        return
 
     @property
     def node(self):

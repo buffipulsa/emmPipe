@@ -1,5 +1,4 @@
 
-
 import os
 import json
 
@@ -15,7 +14,17 @@ class SkinclusterData(ObjectData):
     """
 
     def __init__(self, node=None, skincluster_node=None):
-        super(SkinclusterData, self).__init__(node)
+        """
+        Initialize the SkinclusterData object.
+
+        Args:
+            node (str): The name of the node.
+            skincluster_node (str): The name of the skincluster node.
+
+        Raises:
+            TypeError: If no node is assigned.
+        """
+        super().__init__(node)
 
         if not node:
             raise TypeError('No node assigned')
@@ -167,8 +176,8 @@ class SkinclusterData(ObjectData):
 
         :return: List of bind pre-matrix values.
         """
-        bindPreMatrixValues = [cmds.getAttr('{}.bindPreMatrix[{}]'.format(self.skincluster, i)) for i in self.influence_indices]
-        return bindPreMatrixValues
+        bindPrematrix_values = [cmds.getAttr('{}.bindPreMatrix[{}]'.format(self.skincluster, i)) for i in self.influence_indices]
+        return bindPrematrix_values
 
     @property
     def bind_pre_matrix_inputs(self):
@@ -239,7 +248,7 @@ class SkinclusterData(ObjectData):
         return deformUserNormals
 
 
-def saveSkinclusterData(node, path):
+def save_skincluster_data(node, path):
     """
     Save skincluster data to a JSON file.
 
@@ -253,31 +262,31 @@ def saveSkinclusterData(node, path):
     if not os.path.exists('{}/skincluster'.format(path)):
         os.makedirs('{}/skincluster'.format(path))
 
-    fullPath = '{}/skincluster/{}.json'.format(path, node)
+    full_path = '{}/skincluster/{}.json'.format(path, node)
 
-    cSkinclusterData = SkinclusterData(node)
+    c_skincluster_data = SkinclusterData(node)
 
-    data = {'skincluster': cSkinclusterData.skincluster,
-            'skinclusterName': cSkinclusterData.skinclusterName,
-            'influenceNames': cSkinclusterData.influenceNames,
-            'influenceIndices': list(cSkinclusterData.influenceIndices),
-            'bindPreMatrixValues': cSkinclusterData.bindPreMatrixValues,
-            'bindPreMatrixInputs': cSkinclusterData.bindPreMatrixInputs,
-            'weights': list(cSkinclusterData.weights),
-            'blendWeights': list(cSkinclusterData.blendWeights),
-            'envelope': cSkinclusterData.envelope,
-            'skinningMethod': cSkinclusterData.skinningMethod,
-            'useComponents': cSkinclusterData.useComponents,
-            'normalizeWeights': cSkinclusterData.normalizeWeights,
-            'deformUserNormals': cSkinclusterData.deformUserNormals}
+    data = {'skincluster': c_skincluster_data.skincluster,
+            'skincluster_name': c_skincluster_data.skincluster_name,
+            'influence_names': c_skincluster_data.influence_names,
+            'influence_indices': list(c_skincluster_data.influence_indices),
+            'bind_pre_matrix_values': c_skincluster_data.bind_pre_matrix_values,
+            'bind_pre_matrix_inputs': c_skincluster_data.bind_pre_matrix_inputs,
+            'weights': list(c_skincluster_data.weights),
+            'blend_weights': list(c_skincluster_data.blend_weights),
+            'envelope': c_skincluster_data.envelope,
+            'skinning_method': c_skincluster_data.skinning_method,
+            'use_components': c_skincluster_data.use_components,
+            'normalize_weights': c_skincluster_data.normalize_weights,
+            'deform_user_normals': c_skincluster_data.deform_user_normals}
 
-    fileobj = open(fullPath, mode='w')
-    json.dump(data, fileobj)
-    fileobj.close()
+    file_obj = open(full_path, mode='w')
+    json.dump(data, file_obj)
+    file_obj.close()
 
     return
 
-def loadSkinclusterData(node, path):
+def load_skincluster_data(node, path):
     """
     Load skin cluster data from a JSON file and apply it to the specified node.
 
@@ -288,12 +297,12 @@ def loadSkinclusterData(node, path):
     Returns:
         None
     """
-    fullPath = os.path.join(path, '{}.json'.format(node))
+    full_path = os.path.join(path, '{}.json'.format(node))
 
-    fileobj = open(fullPath, mode='rb')
-    fileobjStr = fileobj.read()
-    data = json.loads(fileobjStr)
-    fileobj.close()
+    file_obj = open(full_path, mode='rb')
+    file_obj_str = file_obj.read()
+    data = json.loads(file_obj_str)
+    file_obj.close()
 
     for joint in data['influenceNames']:
         if not cmds.objExists(joint):
@@ -306,7 +315,7 @@ def loadSkinclusterData(node, path):
 
     cmds.skinCluster(data['influenceNames'], node, name=data['skinclusterName'], tsb=True)
 
-    cSkinclusterData = SkinclusterData(node)
+    c_skincluster_data = SkinclusterData(node)
 
     cmds.setAttr('{}.envelope'.format(data['skinclusterName']), data['envelope'])
     cmds.setAttr('{}.skinningMethod'.format(data['skinclusterName']), data['skinningMethod'])
@@ -314,52 +323,61 @@ def loadSkinclusterData(node, path):
     cmds.setAttr('{}.normalizeWeights'.format(data['skinclusterName']), data['normalizeWeights'])
     cmds.setAttr('{}.deformUserNormals'.format(data['skinclusterName']), data['deformUserNormals'])
 
-    cSkinclusterData.skinclusterFn.setWeights(cSkinclusterData.shape,
-                                              cSkinclusterData.vtx_component,
-                                              om.MIntArray(data['influenceIndices']),
-                                              om.MDoubleArray(data['weights']),
-                                              True,
-                                              False)
+    c_skincluster_data.skinclusterFn.setWeights(c_skincluster_data.shape,
+                                                c_skincluster_data.vtx_component,
+                                                om.MIntArray(data['influenceIndices']),
+                                                om.MDoubleArray(data['weights']),
+                                                True,
+                                                False)
 
-    cSkinclusterData.skinclusterFn.setBlendWeights(cSkinclusterData.shape,
-                                                   cSkinclusterData.vtx_component,
-                                                   om.MDoubleArray(data['blendWeights']))
+    c_skincluster_data.skinclusterFn.setBlendWeights(c_skincluster_data.shape,
+                                                     c_skincluster_data.vtx_component,
+                                                     om.MDoubleArray(data['blendWeights']))
 
     cmds.skinPercent(data['skinclusterName'], cmds.listRelatives(node, shapes=True, noIntermediate=True)[0],
                      normalize=True)
 
     return
 
-def stackSkincluster(source, target):
+def stack_skinclusters(source, target):
+    """
+    Stack skin clusters from the source geometry onto the target geometry.
 
-    cSourceSkincluster = SkinclusterData(source)
+    Args:
+        source (str): The name of the source geometry.
+        target (str): The name of the target geometry.
 
-    skincluster = cmds.deformer(target, type='skinCluster', name='MERGED__{}'.format(cSourceSkincluster.skinclusterName))[0]
+    Returns:
+        None
+    """
+    c_source_skincluster = SkinclusterData(source)
 
-    for i, infl, matrixValue in zip(cSourceSkincluster.influenceIndices, cSourceSkincluster.influenceNames,
-                                    cSourceSkincluster.bindPreMatrixValues):
+    skincluster = cmds.deformer(target, type='skinCluster', name='MERGED__{}'.format(c_source_skincluster.skincluster_name))[0]
 
-        cmds.setAttr('{}.bindPreMatrix[{}]'.format(skincluster, i), matrixValue, type='matrix')
+    for i, infl, matrix_value in zip(c_source_skincluster.influence_indices, c_source_skincluster.influence_names,
+                                    c_source_skincluster.bind_pre_matrix_values):
+
+        cmds.setAttr('{}.bindPreMatrix[{}]'.format(skincluster, i), matrix_value, type='matrix')
 
         cmds.connectAttr('{}.worldMatrix[0]'.format(infl),
                          '{}.matrix[{}]'.format(skincluster, i))
 
-    for i, delta in enumerate(cSourceSkincluster.bindPreMatrixInputs):
+    for i, delta in enumerate(c_source_skincluster.bind_pre_matrix_inputs):
         cmds.connectAttr('{}.worldInverseMatrix[0]'.format(delta),
                          '{}.bindPreMatrix[{}]'.format(skincluster, i))
 
-    cTargetSkincluster = SkinclusterData(target, skincluster)
+    c_target_skincluster = SkinclusterData(target, skincluster)
 
-    cTargetSkincluster.skinclusterFn.setWeights(cTargetSkincluster.shape,
-                                                cTargetSkincluster.vtx_component,
-                                                cTargetSkincluster.influenceIndices,
-                                                cSourceSkincluster.weights,
+    c_target_skincluster.skincluster_fn.setWeights(c_target_skincluster.shape,
+                                                c_target_skincluster.vtx_component,
+                                                c_target_skincluster.influence_indices,
+                                                c_source_skincluster.weights,
                                                 True,
                                                 False)
 
-    cTargetSkincluster.skinclusterFn.setBlendWeights(cTargetSkincluster.shape,
-                                                     cTargetSkincluster.vtx_component,
-                                                     cSourceSkincluster.blendWeights)
+    c_target_skincluster.skincluster_fn.setBlendWeights(c_target_skincluster.shape,
+                                                     c_target_skincluster.vtx_component,
+                                                     c_source_skincluster.blend_weights)
 
 def copySkincluster(source, target):
     """
@@ -372,15 +390,15 @@ def copySkincluster(source, target):
     Returns:
         None
     """
-    cSourceSkincluster = SkinclusterData(source)
+    c_source_skincluster = SkinclusterData(source)
 
     try:
         skincluster = cmds.ls(cmds.listHistory(target), type='skinCluster')[0]
     except:
-        skincluster = cmds.skinCluster(cSourceSkincluster.influenceNames, target, tsb=True,
+        skincluster = cmds.skinCluster(c_source_skincluster.influenceNames, target, tsb=True,
                                        name='skinCluster_{}'.format(target))[0]
 
-    cmds.copySkinWeights(sourceSkin=cSourceSkincluster.skincluster,
+    cmds.copySkinWeights(sourceSkin=c_source_skincluster.skincluster,
                          destinationSkin=skincluster,
                          noMirror=True,
                          normalize=True,
