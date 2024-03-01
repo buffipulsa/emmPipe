@@ -8,38 +8,23 @@ import maya.cmds as cmds
 class ObjectData:
     """
     Represents an object in the scene.
-
-    Attributes:
-        node (str): The name of the node.
-
-    Properties:
-        m_obj (om.MObject): The MObject for the node.
-        dag_path (om.MDagPath): The MDagPath for the node.
-        shape (om.MDagPath): The shape node for the node.
-        transform_fn (om.MFnTransform): The MFnTransform for the node.
-        shape_fn (om.MFnMesh or om.MFnNurbsCurve or om.MFnNurbsSurface): The function set for the shape node.
-        vtx_component (om.MObject): The vertex component for the shape node.
-        vtx_ids (list): The vertex IDs for the shape node.
-        vtx_count (int): The vertex count for the shape node.
     """
 
     def __init__(self, node=None):
-        """
-        Initializes a new instance of the ObjectData class.
-
-        Args:
-            node (str): The name of the node.
-
-        Raises:
-            TypeError: If no node is assigned.
-        """
         
         if not node:
             raise TypeError('No node assigned')
 
-        self.node = node
+        self._node = node
 
         return
+
+    @property
+    def node(self):
+        """
+        str: The name of the node.
+        """
+        return self._node
 
     @property
     def m_obj(self):
