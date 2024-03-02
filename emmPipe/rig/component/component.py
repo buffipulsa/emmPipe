@@ -14,10 +14,6 @@ class Component:
 
     Args:
         projectPath (str): The path to the project.
-
-    Attributes:
-        projectPath (str): The path to the project.
-        cTools (Tools): An instance of the Tools class.
     """
 
     def __init__(self, projectPath):
