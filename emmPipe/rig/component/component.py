@@ -7,15 +7,32 @@ import maya.cmds as cmds
 
 from emmPipe.rig.deformers import skincluster, ngSkinToolsData 
 
-class FileIO():
+
+class Component:
+    """
+    The Component class provides methods for browsing, importing, and exporting various components in a project.
+
+    Args:
+        projectPath (str): The path to the project.
+
+    Attributes:
+        projectPath (str): The path to the project.
+        cTools (Tools): An instance of the Tools class.
+    """
 
     def __init__(self, projectPath):
         self.projectPath = projectPath
 
-        self.cTools = tools.Tools()
-        self.cNgSkinToolsData = ngSkinToolsData.NgSkinData()
-
     def browseComponent(self, component):
+        """
+        Opens the specified component in the file browser.
+
+        Args:
+            component (str): The name of the component.
+
+        Returns:
+            None
+        """
         componentPath = os.path.join(self.projectPath, component)
 
         if os.path.exists(componentPath):
@@ -26,6 +43,12 @@ class FileIO():
         return
 
     def importModelComponent(self):
+        """
+        Imports the model component.
+
+        Returns:
+            None
+        """
         cmds.file(self.getFilePath('model'), i=True)
 
         print('#' * 50)
@@ -35,6 +58,12 @@ class FileIO():
         return
 
     def importBlueprintComponent(self):
+        """
+        Imports the blueprint component.
+
+        Returns:
+            None
+        """
         componentPath = self.getComponentPath('blueprint')
         componentVersion = self.getComponentVersion(componentPath, latest=True)
         fullPath = os.path.join(componentPath, componentVersion)
@@ -48,6 +77,12 @@ class FileIO():
         return
 
     def exportBlueprintComponent(self):
+        """
+        Exports the blueprint component.
+
+        Returns:
+            None
+        """
         componentPath = self.getComponentPath('blueprint')
         componentVersion = self.getComponentVersion(componentPath, latest=True)
         fullPath = os.path.join(componentPath, componentVersion)
@@ -62,6 +97,12 @@ class FileIO():
         return
 
     def saveHoldFile(self):
+        """
+        Saves the hold file.
+
+        Returns:
+            None
+        """
         componentPath = self.getComponentPath('hold')
         holdFilePath = '{}/hold_001.ma'.format(componentPath)
 
@@ -75,6 +116,12 @@ class FileIO():
         return
 
     def openHoldFile(self):
+        """
+        Opens the hold file.
+
+        Returns:
+            None
+        """
         cmds.file(self.getFilePath('hold'), o=True, force=True)
 
         print('#' * 50)
@@ -84,11 +131,16 @@ class FileIO():
         return
 
     def exportControlsComponent(self):
+        """
+        Exports the control shapes.
+
+        Returns:
+            None
+        """
         componentPath = self.getComponentPath('controls')
         componentVersion = self.getComponentVersion(componentPath, latest=True)
         fullPath = os.path.join(componentPath, componentVersion)
 
-        # ctrlShapes = cmds.listRelatives(cmds.ls(sl=True), shapes=True)
         controls = cmds.ls(sl=True, type='transform', shapes=False)
         if not controls:
             controls = cmds.ls('ctrl_*', type='transform', shapes=False)
@@ -109,6 +161,12 @@ class FileIO():
         return
 
     def importControlsComponent(self):
+        """
+        Imports the control shapes.
+
+        Returns:
+            None
+        """
         componentPath = self.getComponentPath('controls')
         componentVersion = self.getComponentVersion(componentPath, latest=True)
         fullPath = os.path.join(componentPath, componentVersion)
@@ -147,11 +205,19 @@ class FileIO():
 
 
     def exportDeformersComponent(self):
+        """
+        Exports the skinCluster weights and ngSkinTools data.
+
+        Returns:
+            None
+        """
         componentPath = self.getComponentPath('deformers')
         componentVersion = self.getComponentVersion(componentPath, latest=True)
         fullPath = os.path.join(componentPath, componentVersion)
 
         skinweightsExported = []
+
+        c_ngskintools_data = ngSkinToolsData.NgSkinData()
 
         selection = cmds.ls(sl=True)
         for obj in selection:
@@ -161,7 +227,7 @@ class FileIO():
             except:
                 print('{} does not have a skincluster node'.format(obj))
 
-            self.cNgSkinToolsData.exportNgSkinData(obj, fullPath)
+            self.c_ngskintools_data.exportNgSkinData(obj, fullPath)
 
         if skinweightsExported:
             print('#' * 50)
@@ -173,6 +239,15 @@ class FileIO():
         return
 
     def importDeformersComponent(self, ngSkin=True):
+        """
+        Imports the skinCluster weights and ngSkinTools data.
+
+        Args:
+            ngSkin (bool, optional): Whether to import ngSkinTools data. Defaults to True.
+
+        Returns:
+            None
+        """
         componentPath = self.getComponentPath('deformers')
         componentVersion = self.getComponentVersion(componentPath, latest=True)
         fullPath = os.path.join(componentPath, componentVersion)
@@ -188,12 +263,14 @@ class FileIO():
                     skinweightsImported.append(obj)
 
         if ngSkin:
+            c_ngskintools_data = ngSkinToolsData.NgSkinData()
+
             ngSkinDataPath = os.path.join(fullPath, 'ngSkinData')
             if os.path.exists(ngSkinDataPath):
                 for obj in os.listdir(ngSkinDataPath):
                     obj = obj.split('.')[0]
                     if cmds.objExists(obj):
-                        self.cNgSkinToolsData.importNgSkinData(obj, ngSkinDataPath)
+                        c_ngskintools_data.importNgSkinData(obj, ngSkinDataPath)
 
         if skinweightsImported:
             print('#' * 50)
@@ -205,6 +282,12 @@ class FileIO():
         return
 
     def exportMiscComponent(self):
+        """
+        Exports the misc component.
+
+        Returns:
+            None
+        """
         componentPath = self.getComponentPath('misc')
         componentVersion = self.getComponentVersion(componentPath, latest=True)
         fullPath = os.path.join(componentPath, componentVersion)
@@ -219,6 +302,12 @@ class FileIO():
         return
 
     def importMiscComponent(self):
+        """
+        Imports the misc component.
+
+        Returns:
+            None
+        """
         componentPath = self.getComponentPath('misc')
         componentVersion = self.getComponentVersion(componentPath, latest=True)
         fullPath = os.path.join(componentPath, componentVersion)
@@ -232,6 +321,12 @@ class FileIO():
         return
 
     def exportPSDData(self):
+        """
+        Exports the PSD data.
+
+        Returns:
+            None
+        """
         componentPath = self.getComponentPath('psdData')
         componentVersion = self.getComponentVersion(componentPath, latest=True)
         fullPath = os.path.join(componentPath, componentVersion)
@@ -266,6 +361,12 @@ class FileIO():
         return
 
     def importPSDData(self):
+        """
+        Imports the PSD data.
+
+        Returns:
+            None
+        """
         componentPath = self.getComponentPath('psdData')
         componentVersion = self.getComponentVersion(componentPath, latest=True)
         fullPath = os.path.join(componentPath, componentVersion)
@@ -294,6 +395,12 @@ class FileIO():
         return
 
     def importTargetsComponent(self):
+        """
+        Imports the targets component from the latest version.
+
+        Returns:
+            None
+        """
         componentPath = self.getComponentPath('targets')
         componentVersion = self.getComponentVersion(componentPath, latest=True)
         fullPath = os.path.join(componentPath, componentVersion)
@@ -306,7 +413,17 @@ class FileIO():
 
         return
 
+
     def getFilePath(self, component):
+        """
+        Retrieves the file path of the latest version of a component.
+
+        Args:
+            component: (str) The name of the component.
+
+        Returns:
+            str: The file path of the latest version of the component.
+        """
         componentPath = self.getComponentPath(component)
         fullDirectory = os.listdir(componentPath)
 
@@ -318,14 +435,36 @@ class FileIO():
 
         return filePath
 
+
     def getComponentPath(self, component):
+        """
+        Retrieves the path of a component.
+
+        Args:
+            component: (str) The name of the component.
+
+        Returns:
+            str: The path of the component.
+        """
         componentPath = os.path.join(self.projectPath, component)
         if not os.path.exists(componentPath):
             os.makedirs(componentPath)
 
         return componentPath
 
+
     def getComponentVersion(self, componentPath, version=1, latest=True):
+        """
+        Retrieves the version of a component.
+
+        Args:
+            componentPath: (str) The path of the component.
+            version: (int) The specific version to retrieve. Default is 1.
+            latest: (bool) Whether to retrieve the latest version. Default is True.
+
+        Returns:
+            str: The version of the component.
+        """
         versions = os.listdir(componentPath)
         if not versions:
             firstVersion = '{}_001'.format(componentPath.split('/')[-1])
@@ -337,7 +476,17 @@ class FileIO():
         else:
             return versions[version]
 
+
     def versionUpComponent(self, component):
+        """
+        Creates a new version of a component.
+
+        Args:
+            component: (str) The name of the component.
+
+        Returns:
+            None
+        """
         componentPath = self.getComponentPath(component)
         currentVersion = self.getComponentVersion(componentPath, latest=True)
 
@@ -354,7 +503,17 @@ class FileIO():
 
         return
 
+
     def incrimentFile(self, filePath):
+        """
+        Increments the file name in a given file path.
+
+        Args:
+            filePath: (str) The file path.
+
+        Returns:
+            str: The new file path with the incremented file name.
+        """
         fullDirectory = os.listdir(filePath)
 
         latestVersionStr = ((fullDirectory[-1].split('_')[-1])).split('.')[0]
@@ -365,89 +524,6 @@ class FileIO():
 
         return newFilePath
 
-
-
-def file_incriment(path, file_name):
-    """
-    Args:
-        path: (str) path to files
-        file_name: name of file to increment
-
-    Returns: Name of new file
-    """
-
-    files = os.listdir(path)
-
-    if files:
-
-        files.sort()
-
-        greatest = 0
-        for old_file in files:
-
-            num = old_file.split('_v')[1]
-            num = int(num.split('.json')[0])
-
-            if num > greatest:
-                greatest = num
-
-        increment = greatest+1
-
-        new_file = '{}_v{}.json'.format(file_name, increment)
-
-    else:
-
-        new_file = '{}_v1.json'.format(file_name)
-
-    return new_file
-
-def save_json(data, path, file_name):
-    """
-    This function saves out the data given to a json file at a given path.
-    Args:
-        data:
-        path:
-        file_name:
-
-    Returns: None
-    """
-
-    with open('{}/{}'.format(path, file_name)) as f_out:
-
-        json.dump(data, f_out, indent=2)
-
-    #print "# Exported data to '%s' #" % file_name
-
-def load_json(path):
-    """
-    This function loads in the json file from a given path.
-    Args:
-        path:
-
-    Returns:
-    """
-
-    files = os.listdir(path)
-
-    if files:
-        numbers = []
-        for f in files:
-            name = f.split('_v',)
-            num = name[1].split('.')[0]
-            numbers.append(int(num))
-        
-        max_num = max(numbers)
-
-        name = path + name[0]+'_v'+str(max_num)+'.json'
-
-        f_in = open(name, 'r')
-        data_in = json.load(f_in) #read the json file and convert it into python data
-        f_in.close()
-
-        data = data_in.get('Controls', None) #get the points value or None
-                                                #if it doesn't exist
-
-        return {'Data':data_in}
 
 
 def clean_anim_ctrls(suffix='Ctrl'):
