@@ -1,7 +1,8 @@
 
+from PySide2 import QtWidgets
 from shiboken2 import wrapInstance
 
-import maya.api.OpenMayaUI as omui
+import maya.OpenMayaUI as omui
 
 
 def maya_main_window():
