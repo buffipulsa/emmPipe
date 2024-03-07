@@ -11,10 +11,16 @@ class LauncherUI(tk.Tk):
     ICONS_PATH = os.path.join(CODE_PATH, "icons")
     SHELF_PATH = os.path.join(CODE_PATH, "shelves")
 
+    WINDOW_WIDTH = 300
+    WINDOW_HEIGHT = 200
+
     def __init__(self):
         super(LauncherUI, self).__init__()
+
         self.title("emmPipe Launcher")
-        self.geometry("300x200")
+        
+        self.geometry(f"{__class__.WINDOW_WIDTH}x{__class__.WINDOW_HEIGHT}")
+        self.center_window(__class__.WINDOW_WIDTH, __class__.WINDOW_HEIGHT)
 
         self.set_paths()
         self.create_widgets()
@@ -26,6 +32,22 @@ class LauncherUI(tk.Tk):
         os.environ["PYTHONPATH"] = __class__.CODE_PATH
         os.environ["MAYA_SHELF_PATH"] = __class__.SHELF_PATH
         os.environ["XBMLANGPATH"] = __class__.ICONS_PATH
+
+    def center_window(self, width, height):
+        """
+        Center the window on the screen.
+
+        Args:
+            width (int): The width of the window.
+            height (int): The height of the window.
+        """
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+
+        x = (screen_width / 2) - (width / 2)
+        y = (screen_height / 2) - (height / 2)
+
+        self.geometry(f"{width}x{height}+{int(x)}+{int(y)}")
 
     def create_widgets(self):
         """
