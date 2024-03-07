@@ -5,15 +5,24 @@ from tkinter import ttk
 
 class LauncherUI(tk.Tk):
 
-    CODE_PATH = r"D:\Rigs\emmPipe"
     MAYA_PATH = r"C:\Program Files\Autodesk\Maya{}\bin\maya.exe"
+
+    CODE_PATH = r"D:\Rigs\emmPipe"
     ICONS_PATH = os.path.join(CODE_PATH, "icons")
+    SHELF_PATH = os.path.join(CODE_PATH, "shelves")
 
     def __init__(self):
         super(LauncherUI, self).__init__()
         self.title("emmPipe Launcher")
         self.geometry("300x200")
+
+        self.set_paths()
         self.create_widgets()
+
+    def set_paths(self):
+        os.environ["PYTHONPATH"] = __class__.CODE_PATH
+        os.environ["MAYA_SHELF_PATH"] = __class__.SHELF_PATH
+        os.environ["XBMLANGPATH"] = __class__.ICONS_PATH
 
     def create_widgets(self):
         """
@@ -25,7 +34,7 @@ class LauncherUI(tk.Tk):
                                     icon_path=f'{__class__.ICONS_PATH}/mayaico.png',
                                     command=self.run_maya)
 
-        maya_version_listbox = MayaVersionComboBox(self)
+        self.maya_version_listbox = MayaVersionComboBox(self)
 
     def run_maya(self):
         """
@@ -42,7 +51,7 @@ class LauncherUI(tk.Tk):
         Returns:
             str: The version of Maya to run.
         """
-        return self.versionListbox.get()
+        return self.maya_version_listbox.get()
     
     def get_icon(self, path):
         """
