@@ -20,6 +20,9 @@ class LauncherUI(tk.Tk):
         self.create_widgets()
 
     def set_paths(self):
+        """
+        Sets the necessary environment variables for the launcher.
+        """
         os.environ["PYTHONPATH"] = __class__.CODE_PATH
         os.environ["MAYA_SHELF_PATH"] = __class__.SHELF_PATH
         os.environ["XBMLANGPATH"] = __class__.ICONS_PATH
