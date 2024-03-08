@@ -1,9 +1,16 @@
+
 import os
 import tkinter as tk
 from tkinter import ttk
 
 
 class LauncherUI(tk.Tk):
+    """
+    The main class for the emmPipe Launcher UI.
+
+    This class represents the application window and contains methods for setting up the UI,
+    handling user interactions, and launching Maya.
+    """
 
     MAYA_PATH = r"C:\Program Files\Autodesk\Maya{}\bin\maya.exe"
 
@@ -33,6 +40,9 @@ class LauncherUI(tk.Tk):
     def set_paths(self):
         """
         Sets the necessary environment variables for the launcher.
+
+        This method sets the PYTHONPATH, MAYA_PLUG_IN_PATH, MAYA_SHELF_PATH, and XBMLANGPATH
+        environment variables to the appropriate paths for emmPipe.
         """
         os.environ["PYTHONPATH"] = __class__.REPO_PATH
         os.environ["MAYA_PLUG_IN_PATH"] = __class__.PLUGIN_PATH
@@ -69,15 +79,14 @@ class LauncherUI(tk.Tk):
         """
         Create the widgets for the launcher UI.
 
-        This method creates the necessary widgets for the launcher UI.
+        This method creates the necessary widgets for the launcher UI, including the menu bar,
+        Maya icon button, and Maya version combo box.
         """
 
         self.menu_bar = MenuBar(self)
         self.config(menu=self.menu_bar)
 
-        maya_button = MayaIconButton(self, 
-                                    icon_path=f'{__class__.ICONS_PATH}/mayaico.png',
-                                    command=self.run_maya)
+        self.maya_button = MayaIconButton(self, command=self.run_maya)
 
         self.maya_version_listbox = MayaVersionComboBox(self)
 
@@ -121,7 +130,7 @@ class MenuBar(tk.Menu):
     def __init__(self, master):
         super(MenuBar, self).__init__(master)
 
-        file_menu = tk.Menu(self, tearoff=0)
+        file_menu = tk.Menu(self, tearoff=False)
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=master.quit)
 
@@ -184,9 +193,9 @@ class MayaIconButton(tk.Button):
     Example:
         button = MayaIconButton(root, "path/to/icon.png")
     """
-    def __init__(self, master, icon_path, **kwargs):
+    def __init__(self, master, **kwargs):
         super(MayaIconButton, self).__init__(master, **kwargs)
-        self.icon = tk.PhotoImage(file=icon_path)
+        self.icon = tk.PhotoImage(file=f'{master.ICONS_PATH}/mayaico.png')
         self.config(image=self.icon)
         self.pack(pady=5)
     
