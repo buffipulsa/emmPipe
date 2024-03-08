@@ -1,4 +1,4 @@
-global proc shelf_emmRig () {
+global proc shelf_emmPipe () {
     global string $gBuffStr;
     global string $gBuffStr0;
     global string $gBuffStr1;
@@ -33,7 +33,7 @@ global proc shelf_emmRig () {
         -style "iconOnly" 
         -marginWidth 0
         -marginHeight 1
-        -command "print('emmRig shelf test')" 
+        -command "from emmPipe.ui.main import main_ui\n\ntry:\n    mainUI.close() # pylint: disable=E0601\n    mainUI.deleteLater()\nexcept:\n    pass\n\nmainUI = main_ui.MainUI()\nmainUI.show(dockable=True)" 
         -sourceType "python" 
         -commandRepeatable 1
         -flat 1

@@ -11,6 +11,8 @@ class LauncherUI(tk.Tk):
     ICONS_PATH = os.path.join(CODE_PATH, "icons")
     SHELF_PATH = os.path.join(CODE_PATH, "shelves")
 
+    APP_ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'launcher_ui.png')
+
     WINDOW_WIDTH = 300
     WINDOW_HEIGHT = 200
 
@@ -22,6 +24,8 @@ class LauncherUI(tk.Tk):
         self.geometry(f"{__class__.WINDOW_WIDTH}x{__class__.WINDOW_HEIGHT}")
         self.center_window(__class__.WINDOW_WIDTH, __class__.WINDOW_HEIGHT)
 
+        self.set_icon()
+
         self.set_paths()
         self.create_widgets()
 
@@ -32,6 +36,16 @@ class LauncherUI(tk.Tk):
         os.environ["PYTHONPATH"] = __class__.CODE_PATH
         os.environ["MAYA_SHELF_PATH"] = __class__.SHELF_PATH
         os.environ["XBMLANGPATH"] = __class__.ICONS_PATH
+    
+    def set_icon(self):
+        """
+        Sets the icon for the application window.
+
+        This method loads an image file specified by the `APP_ICON_PATH` class attribute
+        and sets it as the icon for the application window.
+        """
+        img = tk.PhotoImage(file=__class__.APP_ICON_PATH)
+        self.tk.call('wm', 'iconphoto', self._w, img)
 
     def center_window(self, width, height):
         """
