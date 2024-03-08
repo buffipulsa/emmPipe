@@ -1,10 +1,10 @@
 
 import os
 import tkinter as tk
-from tkinter import ttk
+import ttkbootstrap as ttk
 
 
-class LauncherUI(tk.Tk):
+class LauncherUI(ttk.Window):
     """
     The main class for the emmPipe Launcher UI.
 
@@ -22,15 +22,19 @@ class LauncherUI(tk.Tk):
     APP_ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'launcher_ui.png')
 
     WINDOW_WIDTH = 300
-    WINDOW_HEIGHT = 200
+    WINDOW_HEIGHT = 250
 
     def __init__(self):
         super(LauncherUI, self).__init__()
 
         self.title("emmPipe Launcher")
+
+        ttk.Style().theme_use('darkly')
         
         self.geometry(f"{__class__.WINDOW_WIDTH}x{__class__.WINDOW_HEIGHT}")
         self.center_window(__class__.WINDOW_WIDTH, __class__.WINDOW_HEIGHT)
+
+        self.resizable(False, False)
 
         self.set_icon()
 
@@ -120,7 +124,7 @@ class LauncherUI(tk.Tk):
         return tk.PhotoImage(file=path)
     
 
-class MenuBar(tk.Menu):
+class MenuBar(ttk.Menu):
     """
     A custom MenuBar widget for the launcher UI.
 
@@ -176,7 +180,7 @@ class MayaVersionComboBox(ttk.Combobox):
         """
         self.state(['!readonly'])
 
-class MayaIconButton(tk.Button):
+class MayaIconButton(ttk.Button):
     """
     A custom button widget for Maya with an icon.
 
@@ -197,7 +201,7 @@ class MayaIconButton(tk.Button):
         super(MayaIconButton, self).__init__(master, **kwargs)
         self.icon = tk.PhotoImage(file=f'{master.ICONS_PATH}/mayaico.png')
         self.config(image=self.icon)
-        self.pack(pady=5)
+        self.pack(pady=20)
     
 
 if __name__ == "__main__":
