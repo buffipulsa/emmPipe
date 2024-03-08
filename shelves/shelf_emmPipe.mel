@@ -33,7 +33,42 @@ global proc shelf_emmPipe () {
         -style "iconOnly" 
         -marginWidth 0
         -marginHeight 1
-        -command "from emmPipe.ui.main import main_ui\n\ntry:\n    mainUI.close() # pylint: disable=E0601\n    mainUI.deleteLater()\nexcept:\n    pass\n\nmainUI = main_ui.MainUI()\nmainUI.show(dockable=True)" 
+        -command "from emmPipe.ui.main import main_ui\n\ntry:\n    mainUI.close() # pylint: disable=E0601\n    mainUI.deleteLater()\nexcept:\n    pass\n\nmainUI = main_ui.MainUI()\nmainUI.show()" 
+        -sourceType "python" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+    shelfButton
+        -enableCommandRepeat 1
+        -flexibleWidthType 3
+        -flexibleWidthValue 32
+        -enable 1
+        -width 35
+        -height 34
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "from importlib import reload\n\nfrom emmPipe.ui.main import main_ui; reload(main_ui)\nfrom emmPipe.ui import utils; reload(utils)\nfrom emmPipe.rig.deformers import skincluster; reload(skincluster)\nfrom emmPipe.rig.objects import object_data; reload(object_data)" 
+        -enableBackground 0
+        -backgroundColor 0 0 0 
+        -highlightColor 0.321569 0.521569 0.65098 
+        -align "center" 
+        -label "Reload" 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -imageOverlayLabel "Reload" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.5 
+        -image "pythonFamily.png" 
+        -image1 "pythonFamily.png" 
+        -style "iconOnly" 
+        -marginWidth 0
+        -marginHeight 1
+        -command "from importlib import reload\n\nfrom emmPipe.ui.main import main_ui; reload(main_ui)\nfrom emmPipe.ui import utils; reload(utils)\nfrom emmPipe.rig.deformers import skincluster; reload(skincluster)\nfrom emmPipe.rig.objects import object_data; reload(object_data)" 
         -sourceType "python" 
         -commandRepeatable 1
         -flat 1
@@ -105,40 +140,6 @@ global proc shelf_emmPipe () {
         -marginHeight 1
         -command "NodeEditorWindow" 
         -sourceType "mel" 
-        -commandRepeatable 1
-        -flat 1
-    ;
-    shelfButton
-        -enableCommandRepeat 1
-        -flexibleWidthType 3
-        -flexibleWidthValue 32
-        -enable 1
-        -width 35
-        -height 34
-        -manage 1
-        -visible 1
-        -preventOverride 0
-        -annotation "# Any code required before unloading the plug-in (e.g. creating a new scene)\ncmds.file(new=True, force=True)\n\n# Reload the plugin\nfor plugin_name, node_name in zip(['rig_template.py', 'emm_locator.py'],\n                                  ['emmRigTemplate', 'emmlocator']):\n    #plugin_name = \"rig_template.py\" # Insert plugin python file name here\n    cmds.evalDeferred('if cmds.pluginInfo(\"{0}\", q=True, loaded=True): cmds.unloadPlugin(\"{0}\")'.format(plugin_name))\n    cmds.evalDeferred('if not cmds.pluginInfo(\"{0}\", q=True, loaded=True): cmds.loadPlugin(\"{0}\")'.format(plugin_name))\n    \n    \n    # Any setup code to help speed up testing (e.g. loading a test scene)\n    cmds.evalDeferred('cmds.createNode(\"{}\")'.format(node_name)) # Insert plugin name here" 
-        -enableBackground 0
-        -backgroundColor 0 0 0 
-        -highlightColor 0.321569 0.521569 0.65098 
-        -align "center" 
-        -label "# Any code required before unloading the plug-in (e.g. creating ..." 
-        -labelOffset 0
-        -rotation 0
-        -flipX 0
-        -flipY 0
-        -useAlpha 1
-        -font "plainLabelFont" 
-        -overlayLabelColor 0.8 0.8 0.8 
-        -overlayLabelBackColor 0 0 0 0.5 
-        -image "pythonFamily.png" 
-        -image1 "pythonFamily.png" 
-        -style "iconOnly" 
-        -marginWidth 0
-        -marginHeight 1
-        -command "# Any code required before unloading the plug-in (e.g. creating a new scene)\ncmds.file(new=True, force=True)\n\n# Reload the plugin\nfor plugin_name, node_name in zip(['emm_locator.py'],\n                                  ['emmlocator']):\n    #plugin_name = \"rig_template.py\" # Insert plugin python file name here\n    cmds.evalDeferred('if cmds.pluginInfo(\"{0}\", q=True, loaded=True): cmds.unloadPlugin(\"{0}\")'.format(plugin_name))\n    cmds.evalDeferred('if not cmds.pluginInfo(\"{0}\", q=True, loaded=True): cmds.loadPlugin(\"{0}\")'.format(plugin_name))\n    \n    \n    # Any setup code to help speed up testing (e.g. loading a test scene)\n    cmds.evalDeferred('cmds.createNode(\"{}\")'.format(node_name)) # Insert plugin name here" 
-        -sourceType "python" 
         -commandRepeatable 1
         -flat 1
     ;

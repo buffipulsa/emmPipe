@@ -4,11 +4,9 @@ from PySide2 import QtWidgets
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtWidgets import QTabWidget, QTabBar
 
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-
 from emmPipe.ui.utils import maya_main_window
 
-class MainUI(MayaQWidgetDockableMixin, QtWidgets.QDialog):
+class MainUI(QtWidgets.QDialog):
 
     WINDOW_TITLE = 'emmPipe'
 
