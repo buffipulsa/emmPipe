@@ -36,7 +36,7 @@ class MainUI(DockableUI):
 
     def add_layouts(self):
 
-        layout = QHBoxLayout(self)
+        layout = QVBoxLayout(self)
         layout.addStretch()
         layout.addWidget(self.tab_bar)
 
