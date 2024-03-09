@@ -33,7 +33,7 @@ global proc shelf_emmPipe () {
         -style "iconOnly" 
         -marginWidth 0
         -marginHeight 1
-        -command "from emmPipe.ui.main import main_ui\n\ntry:\n    mainUI.close() # pylint: disable=E0601\n    mainUI.deleteLater()\nexcept:\n    pass\n\nmainUI = main_ui.MainUI()\nmainUI.show()" 
+        -command "\"\"\"\nfrom emmPipe.ui.main import main_ui\nmain_ui.MainUI.display()\n\"\"\"\nfrom emmPipe.ui.main import main_ui\n\nif cmds.window(main_ui.MainUI.get_workspace_control_name(), exists=True):\n    cmds.deleteUI(main_ui.MainUI.get_workspace_control_name())\n\n#main_ui.MainUI.module_name_override = 'main_ui'\n\ntry:\n\temmPipeUI.setParent(None)\n\temmPipeUI.deleteLater()\nexcept:\n\tpass\n\nmain_ui.MainUI()" 
         -sourceType "python" 
         -commandRepeatable 1
         -flat 1
