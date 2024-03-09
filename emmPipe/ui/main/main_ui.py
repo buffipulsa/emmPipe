@@ -1,10 +1,13 @@
+import os
 
 from PySide2 import QtCore
 from PySide2 import QtWidgets
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QStackedWidget
 from PySide2.QtWidgets import QTabWidget, QTabBar
 
+
 from emmPipe.ui.utils import DockableUI
+from emmPipe.ui.utils import set_stylesheet
 
 class MainUI(DockableUI):
 
@@ -15,6 +18,8 @@ class MainUI(DockableUI):
 
     def __init__(self):
         super().__init__()
+
+        set_stylesheet(self, 'VisualScript')
 
     def add_widgets(self):
 

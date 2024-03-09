@@ -1,3 +1,4 @@
+import os
 
 from PySide2 import QtCore
 from PySide2 import QtWidgets
@@ -6,6 +7,25 @@ from shiboken2 import wrapInstance, getCppPointer
 import maya.OpenMayaUI as omui
 import maya.cmds as cmds
 
+
+def set_stylesheet(widget, stylesheet=None):
+    """
+    Set the stylesheet for a given widget.
+
+    Args:
+        widget (QWidget): The widget to set the stylesheet for.
+        stylesheet (str): The name of the stylesheet file to use. If not provided, no stylesheet will be set.
+
+    Returns:
+        None
+    """
+    STYLESHEET_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), f'data\stylesheets\{stylesheet}.qss'))
+
+    if stylesheet and os.path.exists(STYLESHEET_PATH):
+        with open(STYLESHEET_PATH, 'r') as f:
+            widget.setStyleSheet(f.read())
+    else:
+        cmds.warning(f"Stylesheet not found: {stylesheet}")
 
 def maya_main_window():
     """
@@ -129,4 +149,4 @@ class DockableUI(QtWidgets.QWidget):
     def show_workspace_control(self):
         self.workspace_control.set_visible(True)
 
-        
+
