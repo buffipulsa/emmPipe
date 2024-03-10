@@ -14,7 +14,10 @@ class LauncherUI(ttk.Window):
 
     MAYA_PATH = r"C:\Program Files\Autodesk\Maya{}\bin\maya.exe"
 
-    REPO_PATH = r"D:\Rigs\emmPipe"
+    BASEPATH = r'D:\Rigs'
+    PROJECTS_PATH = os.path.join(BASEPATH, 'Projects')
+    REPO_PATH = os.path.join(BASEPATH, 'emmPipe')
+    
     PLUGIN_PATH = os.path.join(REPO_PATH, "plug-ins")
     ICONS_PATH = os.path.join(REPO_PATH, "icons")
     SHELF_PATH = os.path.join(REPO_PATH, "shelves")
@@ -52,6 +55,7 @@ class LauncherUI(ttk.Window):
         os.environ["MAYA_PLUG_IN_PATH"] = __class__.PLUGIN_PATH
         os.environ["MAYA_SHELF_PATH"] = __class__.SHELF_PATH
         os.environ["XBMLANGPATH"] = __class__.ICONS_PATH
+        os.environ["EMMPIPE_PROJECTS_PATH"] = __class__.PROJECTS_PATH
     
     def set_icon(self):
         """

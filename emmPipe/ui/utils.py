@@ -120,10 +120,6 @@ class DockableUI(QtWidgets.QWidget):
 
         self.setObjectName(self.__class__.__name__)
 
-        self.add_actions()
-        self.add_widgets()
-        self.add_layout()
-        self.add_connections()
         self.create_workspace_control()
 
     def add_actions(self):

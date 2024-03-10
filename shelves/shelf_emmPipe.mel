@@ -68,7 +68,7 @@ global proc shelf_emmPipe () {
         -style "iconOnly" 
         -marginWidth 0
         -marginHeight 1
-        -command "from importlib import reload\n\nfrom emmPipe.ui.main import main_ui; reload(main_ui)\nfrom emmPipe.ui import utils; reload(utils)\nfrom emmPipe.rig.deformers import skincluster; reload(skincluster)\nfrom emmPipe.rig.objects import object_data; reload(object_data)" 
+        -command "from importlib import reload\n\n# UI\nfrom emmPipe.ui.main import main_ui; reload(main_ui)\nfrom emmPipe.ui.main.widgets import asset_widget; reload(asset_widget)\nfrom emmPipe.ui import utils; reload(utils)\n\n# RIG\nfrom emmPipe.rig.deformers import skincluster; reload(skincluster)\nfrom emmPipe.rig.objects import object_data; reload(object_data)" 
         -sourceType "python" 
         -commandRepeatable 1
         -flat 1

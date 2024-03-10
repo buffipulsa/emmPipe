@@ -1,6 +1,7 @@
 import os
 
 from PySide2 import QtCore
+from PySide2.QtCore import QObject
 from PySide2 import QtWidgets
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QStackedWidget
 from PySide2.QtWidgets import QTabWidget, QTabBar
@@ -8,6 +9,21 @@ from PySide2.QtWidgets import QTabWidget, QTabBar
 
 from emmPipe.ui.utils import DockableUI
 from emmPipe.ui.utils import set_stylesheet
+
+from .widgets.asset_widget import AssetWidget
+from .widgets.model_widget import ModelWidget
+from .widgets.rig_widget import RigWidget
+
+class TestData(QObject):
+    
+        def __init__(self):
+            super().__init__()
+
+            self.asset_path = None
+        
+        def print_asset_path(self):
+            print(self.asset_path)
+
 
 class MainUI(DockableUI):
 
@@ -19,6 +35,12 @@ class MainUI(DockableUI):
     def __init__(self):
         super().__init__()
 
+        self.c_data = TestData()
+
+        self.add_widgets()
+        self.add_layouts()
+        self.add_connections()
+
         set_stylesheet(self, 'VisualScript')
 
     def add_widgets(self):
@@ -26,20 +48,22 @@ class MainUI(DockableUI):
         self.tab_bar = CustomTabBar(self)
         self.tab_bar.setFixedWidth(self.WINDOW_WIDTH)
 
-        asset_widget = AssetWidget(self)
-        model_widget = ModelWidget(self)
-        rig_widget = RigWidget(self)
+        self.asset_widget = AssetWidget(self.c_data, self)
+        model_widget = ModelWidget(self.c_data, self)
+        self.rig_widget = RigWidget(self.c_data, self)
 
-        self.tab_bar.add_tab(asset_widget, 'Asset')
+        self.tab_bar.add_tab(self.asset_widget, 'Asset')
         self.tab_bar.add_tab(model_widget, 'Model')
-        self.tab_bar.add_tab(rig_widget, 'Rig')
+        self.tab_bar.add_tab(self.rig_widget, 'Rig')
 
     def add_layouts(self):
 
         layout = QVBoxLayout(self)
         layout.addStretch()
         layout.addWidget(self.tab_bar)
-
+    
+    def add_connections(self):
+        self.rig_widget.button.clicked.connect(self.c_data.print_asset_path)
 
     def center_window(self, window):
 
@@ -47,7 +71,7 @@ class MainUI(DockableUI):
         center_point = QtCore.QCoreApplication.instance().desktop().availableGeometry().center()
         frame_geometry.moveCenter(center_point)
         window.move(frame_geometry.topLeft())
-
+    
 
 class CustomTabBar(QtWidgets.QWidget):
 
@@ -61,13 +85,10 @@ class CustomTabBar(QtWidgets.QWidget):
     def add_widgets(self):
     
         self.tab_bar = QTabBar()
-
-
         self.stacked_widget = QStackedWidget()
     
     def add_layouts(self):
         layout = QVBoxLayout(self)
-        #layout.setContentsMargins(100, 100, 100, 100)
         layout.addStretch()
 
         layout.addWidget(self.tab_bar)
@@ -82,53 +103,3 @@ class CustomTabBar(QtWidgets.QWidget):
         self.stacked_widget.addWidget(widget)
 
 
-class AssetWidget(QtWidgets.QWidget):
-    
-        def __init__(self, parent=None):
-            super().__init__(parent)
-    
-            self.add_widgets()
-            self.add_layouts()
-        
-        def add_widgets(self):
-            
-            self.button = QtWidgets.QPushButton('Asset')
-
-        def add_layouts(self):
-            main_layout = QVBoxLayout(self)
-            
-            main_layout.addWidget(self.button)
-
-class ModelWidget(QtWidgets.QWidget):
-    
-        def __init__(self, parent=None):
-            super().__init__(parent)
-    
-            self.add_widgets()
-            self.add_layouts()
-        
-        def add_widgets(self):
-            
-            self.button = QtWidgets.QPushButton('Model')
-
-        def add_layouts(self):
-            main_layout = QVBoxLayout(self)
-            
-            main_layout.addWidget(self.button)
-
-class RigWidget(QtWidgets.QWidget):
-    
-        def __init__(self, parent=None):
-            super().__init__(parent)
-    
-            self.add_widgets()
-            self.add_layouts()
-        
-        def add_widgets(self):
-            
-            self.button = QtWidgets.QPushButton('Rig')
-
-        def add_layouts(self):
-            main_layout = QVBoxLayout(self)
-            
-            main_layout.addWidget(self.button)
