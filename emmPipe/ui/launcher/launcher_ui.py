@@ -17,6 +17,7 @@ class LauncherUI(ttk.Window):
     BASEPATH = r'D:\Rigs'
     PROJECTS_PATH = os.path.join(BASEPATH, 'Projects')
     REPO_PATH = os.path.join(BASEPATH, 'emmPipe')
+    MAYA_SCRIPT_PATH = os.path.join(BASEPATH, 'emmPipe', 'emmPipe')
     
     PLUGIN_PATH = os.path.join(REPO_PATH, "plug-ins")
     ICONS_PATH = os.path.join(REPO_PATH, "icons")
@@ -41,8 +42,9 @@ class LauncherUI(ttk.Window):
 
         self.set_icon()
 
-        self.set_paths()
         self.create_widgets()
+
+        self.set_paths()
 
     def set_paths(self):
         """
@@ -52,10 +54,12 @@ class LauncherUI(ttk.Window):
         environment variables to the appropriate paths for emmPipe.
         """
         os.environ["PYTHONPATH"] = __class__.REPO_PATH
+        os.environ["MAYA_SCRIPT_PATH"] = __class__.MAYA_SCRIPT_PATH
         os.environ["MAYA_PLUG_IN_PATH"] = __class__.PLUGIN_PATH
         os.environ["MAYA_SHELF_PATH"] = __class__.SHELF_PATH
         os.environ["XBMLANGPATH"] = __class__.ICONS_PATH
         os.environ["EMMPIPE_PROJECTS_PATH"] = __class__.PROJECTS_PATH
+        os.environ["EMMPIPE_MODE"] = self.prod_or_dev_cbox.get()
     
     def set_icon(self):
         """

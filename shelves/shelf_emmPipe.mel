@@ -33,7 +33,7 @@ global proc shelf_emmPipe () {
         -style "iconOnly" 
         -marginWidth 0
         -marginHeight 1
-        -command "\"\"\"\nfrom emmPipe.ui.main import main_ui\nmain_ui.MainUI.display()\n\"\"\"\nfrom emmPipe.ui.main import main_ui\n\nif cmds.window(main_ui.MainUI.get_workspace_control_name(), exists=True):\n    cmds.deleteUI(main_ui.MainUI.get_workspace_control_name())\n\n#main_ui.MainUI.module_name_override = 'main_ui'\n\ntry:\n\temmPipeUI.setParent(None)\n\temmPipeUI.deleteLater()\nexcept:\n\tpass\n\nmain_ui.MainUI()" 
+        -command "import maya.cmds as cmds\n\"\"\"\nfrom emmPipe.ui.main import main_ui\nmain_ui.MainUI.display()\n\"\"\"\nfrom emmPipe.ui.main import main_ui\n\nif cmds.window(main_ui.MainUI.get_workspace_control_name(), exists=True):\n    cmds.deleteUI(main_ui.MainUI.get_workspace_control_name())\n\n#main_ui.MainUI.module_name_override = 'main_ui'\n\ntry:\n\temmPipeUI.setParent(None)\n\temmPipeUI.deleteLater()\nexcept:\n\tpass\n\nmain_ui.MainUI()" 
         -sourceType "python" 
         -commandRepeatable 1
         -flat 1
@@ -48,19 +48,19 @@ global proc shelf_emmPipe () {
         -manage 1
         -visible 1
         -preventOverride 0
-        -annotation "from importlib import reload\n\nfrom emmPipe.ui.main import main_ui; reload(main_ui)\nfrom emmPipe.ui import utils; reload(utils)\nfrom emmPipe.rig.deformers import skincluster; reload(skincluster)\nfrom emmPipe.rig.objects import object_data; reload(object_data)" 
+        -annotation "from emmPipe.dev.utils import unload_packages\n\nunload_packages(silent=False, packages=[\"emmPipe\"])\nimport emmPipe" 
         -enableBackground 0
         -backgroundColor 0 0 0 
         -highlightColor 0.321569 0.521569 0.65098 
         -align "center" 
-        -label "Reload" 
+        -label "reload" 
         -labelOffset 0
         -rotation 0
         -flipX 0
         -flipY 0
         -useAlpha 1
         -font "plainLabelFont" 
-        -imageOverlayLabel "Reload" 
+        -imageOverlayLabel "reload" 
         -overlayLabelColor 0.8 0.8 0.8 
         -overlayLabelBackColor 0 0 0 0.5 
         -image "pythonFamily.png" 
@@ -68,7 +68,7 @@ global proc shelf_emmPipe () {
         -style "iconOnly" 
         -marginWidth 0
         -marginHeight 1
-        -command "from importlib import reload\n\n# UI\nfrom emmPipe.ui.main import main_ui; reload(main_ui)\nfrom emmPipe.ui.main.widgets import asset_widget; reload(asset_widget)\nfrom emmPipe.ui.main.widgets import model_widget; reload(model_widget)\nfrom emmPipe.ui.main.widgets import rig_widget; reload(rig_widget)\nfrom emmPipe.ui import utils; reload(utils)\n\n# RIG\nfrom emmPipe.rig.deformers import skincluster; reload(skincluster)\nfrom emmPipe.rig.objects import object_data; reload(object_data)" 
+        -command "from emmPipe.dev.utils import unload_packages\n\nunload_packages(silent=False, packages=[\"emmPipe\"])\nimport emmPipe" 
         -sourceType "python" 
         -commandRepeatable 1
         -flat 1

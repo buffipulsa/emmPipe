@@ -1,5 +1,8 @@
 import sys
 
+import maya.cmds as cmds
+import maya.mel as mel
+
 # if you have some packages that you often reload, you can put them here
 # and they will get reloaded if "packages" attribute is not explicitly stated
 DEFAULT_RELOAD_PACKAGES = [] 
@@ -35,3 +38,25 @@ def unload_packages(silent=True, packages=None):
                     print("Unloaded: %s" % i)
         except:
             print("Failed to unload: %s" % i)
+
+def create_reload_shelf_button(shelf_name="reloadShelf", button_name="reloadButton", module_to_reload=None):
+    """
+    Creates a shelf button that reloads the specified packages. 
+    https://www.aleksandarkocic.com/2020/12/19/live-reload-your-python-code-in-maya/
+
+    Returns:
+        None
+    """
+    # create shelf
+    if not cmds.shelfLayout(shelf_name, exists=True):
+        raise ValueError(f'Shelf {shelf_name} does not exist.')
+
+    # create button
+    if not cmds.shelfButton(button_name, exists=True):
+        if modules_to_reload is None:
+            modules_to_reload = DEFAULT_RELOAD_PACKAGES
+        else:
+            cmds.shelfButton(button_name, parent=shelf_name, label="Reload", command=f'from emmPipe.dev.utils import unload_packages\nunload_packages(silent=False, packages=[{module_to_reload}])\nimport {module_to_reload}', image1="pythonFamily.png", annotation=f"Reloads the {module_to_reload}")
+
+    # set button to run python
+    mel.eval('global string $gShelfTopLevel; shelfButton -edit -commandLanguage python $gShelfTopLevel|reloadShelf|reloadButton;')
