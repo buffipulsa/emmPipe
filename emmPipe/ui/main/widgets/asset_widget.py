@@ -7,17 +7,15 @@ from PySide2.QtWidgets import QTabWidget, QTabBar
 
 class AssetWidget(QtWidgets.QWidget):
 
-        PROJECT_PATH = os.environ['EMMPIPE_PROJECTS_PATH']
-
         def __init__(self, c_data, parent=None):
             super().__init__(parent)
 
             self.c_data = c_data
-    
+
             self.add_widgets()
             self.add_layouts()
             self.add_connections()
-
+            
             self.update_asset_path()
         
         def add_widgets(self):
@@ -41,7 +39,7 @@ class AssetWidget(QtWidgets.QWidget):
         
         def add_connections(self):
             self.show_cbox.currentIndexChanged.connect(self.update_assets)
-            self.show_cbox.currentIndexChanged.connect(self.update_asset_path)
+            #self.show_cbox.currentIndexChanged.connect(self.update_asset_path)
             self.asset_cbox.currentIndexChanged.connect(self.update_asset_path)
 
         def get_projects(self):
@@ -51,7 +49,7 @@ class AssetWidget(QtWidgets.QWidget):
             Returns:
                 list: The projects.
             """
-            return os.listdir(self.PROJECT_PATH)
+            return os.listdir(self.c_data.projects_path)
         
         def get_assets(self):
             """
@@ -60,7 +58,7 @@ class AssetWidget(QtWidgets.QWidget):
             Returns:
                 list: The assets.
             """
-            return os.listdir(os.path.join(self.PROJECT_PATH, self.show_cbox.currentText()))
+            return os.listdir(os.path.join(self.c_data.projects_path, self.show_cbox.currentText()))
         
         def update_assets(self):
             self.asset_cbox.clear()
@@ -68,5 +66,5 @@ class AssetWidget(QtWidgets.QWidget):
         
         def update_asset_path(self):
             #print(os.path.join(__class__.PROJECT_PATH, self.show_cbox.currentText(), self.asset_cbox.currentText()))
-            self.c_data.asset_path =  os.path.join(__class__.PROJECT_PATH, self.show_cbox.currentText(), self.asset_cbox.currentText())
+            self.c_data.asset_path =  os.path.join(self.c_data.projects_path, self.show_cbox.currentText(), self.asset_cbox.currentText())
         

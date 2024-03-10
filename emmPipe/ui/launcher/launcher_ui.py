@@ -25,7 +25,7 @@ class LauncherUI(ttk.Window):
     APP_ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'launcher_ui.png')
 
     WINDOW_WIDTH = 300
-    WINDOW_HEIGHT = 250
+    WINDOW_HEIGHT = 300
 
     def __init__(self):
         super(LauncherUI, self).__init__()
@@ -96,7 +96,8 @@ class LauncherUI(ttk.Window):
 
         self.maya_button = MayaIconButton(self, command=self.run_maya)
 
-        self.maya_version_listbox = MayaVersionComboBox(self)
+        self.maya_version_cbox = CustomComboBox(self, values=['2024', '2023', '2020'])
+        self.prod_or_dev_cbox = CustomComboBox(self, values=['Production', 'Development'])
 
     def run_maya(self):
         """
@@ -113,7 +114,7 @@ class LauncherUI(ttk.Window):
         Returns:
             str: The version of Maya to run.
         """
-        return self.maya_version_listbox.get()
+        return self.maya_version_cbox.get()
     
     def get_icon(self, path):
         """
@@ -144,7 +145,7 @@ class MenuBar(ttk.Menu):
 
         self.add_cascade(label="File", menu=file_menu)
 
-class MayaVersionComboBox(ttk.Combobox):
+class CustomComboBox(ttk.Combobox):
     """
     A custom Combobox widget for Maya versions.
 
@@ -157,11 +158,11 @@ class MayaVersionComboBox(ttk.Combobox):
     Example:
         combobox = MayaVersionComboBox(root)
     """
-    def __init__(self, master, **kwargs):
-        super(MayaVersionComboBox, self).__init__(master, **kwargs)
+    def __init__(self, master, values=None, **kwargs):
+        super(CustomComboBox, self).__init__(master, **kwargs)
+        self["values"] = values
+        self.set(values[0])
         self.pack(pady=5)
-        self["values"] = ["2024", "2023", "2020"]
-        self.set("2024")
 
         self.bind("<FocusIn>", self.on_combobox_click)
         self.bind("<FocusOut>", self.on_combobox_leave)

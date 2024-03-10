@@ -24,6 +24,10 @@ class TestData(QObject):
         def print_asset_path(self):
             print(self.asset_path)
 
+        @property
+        def projects_path(self):
+            return os.environ['EMMPIPE_PROJECTS_PATH']
+
 
 class MainUI(DockableUI):
 
