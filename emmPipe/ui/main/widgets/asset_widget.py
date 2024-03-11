@@ -5,6 +5,8 @@ from PySide2 import QtWidgets
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QStackedWidget
 from PySide2.QtWidgets import QTabWidget, QTabBar
 
+from emmPipe.ui.utils import InfoButtonWidget
+
 class AssetWidget(QtWidgets.QWidget):
 
         def __init__(self, c_data, parent=None):
@@ -16,13 +18,18 @@ class AssetWidget(QtWidgets.QWidget):
             self.add_layouts()
             self.add_connections()
 
-            self.update_asset_path()
-        
+            self.c_data.update_show(self.show_cbox.currentText())
+            self.c_data.update_asset(self.asset_cbox.currentText())
+
         def add_widgets(self):
             
+            self.info_button = InfoButtonWidget(self, 'Here you can select the show and asset you wish to work on.')
+
             self.show_label = QtWidgets.QLabel('Show:')
             self.asset_label = QtWidgets.QLabel('Asset:')
-            self.asset_label.setIndent(10)
+
+            self.show_label.setIndent(5)
+            self.asset_label.setIndent(25)
 
             self.show_cbox = QtWidgets.QComboBox()
             self.asset_cbox = QtWidgets.QComboBox()
@@ -31,21 +38,20 @@ class AssetWidget(QtWidgets.QWidget):
             self.asset_cbox.addItems(self.get_assets())
 
             self.show_cbox.setCurrentText('common')
-            self.update_assets()
+            self.update_assets_cbox()
             self.asset_cbox.setCurrentText('chrBaseMale')
 
         def add_layouts(self):
-            layout = QVBoxLayout(self)
-            layout.addSpacing(10)
+
+            layout = QVBoxLayout(self,alignment=QtCore.Qt.AlignTop)
             
             label_layout = QHBoxLayout()
-            label_layout.addSpacing(15)
 
             label_layout.addWidget(self.show_label)
             label_layout.addWidget(self.asset_label)
+            label_layout.addWidget(self.info_button)
 
             cbox_layout = QHBoxLayout()
-            cbox_layout.addSpacing(10)
 
             cbox_layout.addWidget(self.show_cbox)
             cbox_layout.addWidget(self.asset_cbox)
@@ -54,8 +60,10 @@ class AssetWidget(QtWidgets.QWidget):
             layout.addLayout(cbox_layout)
         
         def add_connections(self):
-            self.show_cbox.currentIndexChanged.connect(self.update_assets)
-            self.asset_cbox.currentIndexChanged.connect(self.update_asset_path)
+            self.show_cbox.currentIndexChanged.connect(self.update_assets_cbox)
+
+            self.show_cbox.currentIndexChanged.connect(lambda _: setattr(self.c_data, 'show', self.show_cbox.currentText()))
+            self.asset_cbox.currentIndexChanged.connect(lambda _: setattr(self.c_data, 'asset', self.asset_cbox.currentText()))
 
         def get_projects(self):
             """
@@ -75,11 +83,9 @@ class AssetWidget(QtWidgets.QWidget):
             """
             return os.listdir(os.path.join(self.c_data.projects_path, self.show_cbox.currentText()))
         
-        def update_assets(self):
+        def update_assets_cbox(self):
             self.asset_cbox.clear()
             self.asset_cbox.addItems(self.get_assets())
         
-        def update_asset_path(self):
-            #print(os.path.join(__class__.PROJECT_PATH, self.show_cbox.currentText(), self.asset_cbox.currentText()))
-            self.c_data.asset_path =  os.path.join(self.c_data.projects_path, self.show_cbox.currentText(), self.asset_cbox.currentText())
+        
         

@@ -1,34 +1,19 @@
 import os
 
 from PySide2 import QtCore
-from PySide2.QtCore import QObject
 from PySide2 import QtWidgets
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QStackedWidget
 from PySide2.QtWidgets import QTabWidget, QTabBar
 
 
-from emmPipe.ui.utils import DockableUI
-from emmPipe.ui.utils import set_stylesheet
+from emmPipe.ui.utils import DockableUI, set_stylesheet
+from emmPipe.ui.ui_controller import UIController
 
 from .widgets.asset_widget import AssetWidget
 from .widgets.model_widget import ModelWidget
 from .widgets.rig_widget import RigWidget
 
 from emmPipe.rig.component import component
-
-class TestData(QObject):
-    
-        def __init__(self):
-            super().__init__()
-
-            self.asset_path = None
-        
-        def print_asset_path(self):
-            print(self.asset_path)
-
-        @property
-        def projects_path(self):
-            return os.environ['EMMPIPE_PROJECTS_PATH']
 
 
 class MainUI(DockableUI):
@@ -39,7 +24,7 @@ class MainUI(DockableUI):
     WINDOW_HEIGHT = 600
 
     def __init__(self):
-        self.c_data = TestData()
+        self.c_ui_controller = UIController()
         super().__init__()
 
         set_stylesheet(self, 'VisualScript')
@@ -49,9 +34,9 @@ class MainUI(DockableUI):
         self.tab_bar = CustomTabBar(self)
         self.tab_bar.setFixedWidth(self.WINDOW_WIDTH)
 
-        self.asset_widget = AssetWidget(self.c_data, self)
-        self.model_widget = ModelWidget(self.c_data, self)
-        self.rig_widget = RigWidget(self.c_data, self)
+        self.asset_widget = AssetWidget(self.c_ui_controller, self)
+        self.model_widget = ModelWidget(self.c_ui_controller, self)
+        self.rig_widget = RigWidget(self.c_ui_controller, self)
 
         self.tab_bar.add_tab(self.asset_widget, 'Asset')
         self.tab_bar.add_tab(self.model_widget, 'Model')
@@ -65,7 +50,6 @@ class MainUI(DockableUI):
 
     def add_connections(self):
         
-
         self.model_widget.add_connections()
         self.rig_widget.add_connections()
 

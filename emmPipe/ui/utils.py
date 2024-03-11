@@ -135,4 +135,32 @@ class DockableUI(QtWidgets.QWidget):
         self.workspace_control.restore_ui()
 
 
+class InfoButtonWidget(QtWidgets.QPushButton):
+
+    def __init__(self, parent=None, message=None):
+        super().__init__(parent)
+
+        self.message = message
+
+        self.setText('?')
+        self.setFixedWidth(25)
+        
+        self.add_connections()
+
+    def add_connections(self):
+        self.clicked.connect(self.show_info)
+
+    def show_info(self):
+        info = self.get_info()
+
+        message_box = QtWidgets.QMessageBox()
+        message_box.information(self, 'Guide', info)
+
+    def get_info(self):
+        if self.message:
+            return self.message
+        else:
+            raise ValueError('Please provide a message.')
+
+
 

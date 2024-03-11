@@ -45,6 +45,8 @@ class LauncherUI(ttk.Window):
 
         self.create_widgets()
 
+        return
+
     def set_paths(self):
         """
         Sets the necessary environment variables for the launcher.
@@ -55,14 +57,14 @@ class LauncherUI(ttk.Window):
         os.environ["PYTHONPATH"] = __class__.REPO_PATH
         os.environ["MAYA_SCRIPT_PATH"] = __class__.MAYA_SCRIPT_PATH
         os.environ["MAYA_PLUG_IN_PATH"] = __class__.PLUGIN_PATH
+        os.environ["MAYA_SHELF_PATH"] = __class__.PROD_SHELF_PATH
         os.environ["XBMLANGPATH"] = __class__.ICONS_PATH
         os.environ["EMMPIPE_PROJECTS_PATH"] = __class__.PROJECTS_PATH
         os.environ["EMMPIPE_MODE"] = self.prod_or_dev_cbox.get()
 
-        if os.environ["EMMPIPE_MODE"] == 'Production':
-            os.environ["MAYA_SHELF_PATH"] = __class__.PROD_SHELF_PATH
-        else:
-            os.environ["MAYA_SHELF_PATH"] = __class__.DEV_SHELF_PATH
+        self.set_mode_to_dev_or_prod(os.environ["EMMPIPE_MODE"])
+
+        return
     
     def set_icon(self):
         """
@@ -73,6 +75,8 @@ class LauncherUI(ttk.Window):
         """
         img = tk.PhotoImage(file=__class__.APP_ICON_PATH)
         self.tk.call('wm', 'iconphoto', self._w, img)
+
+        return
 
     def center_window(self, width, height):
         """
@@ -90,6 +94,8 @@ class LauncherUI(ttk.Window):
 
         self.geometry(f"{width}x{height}+{int(x)}+{int(y)}")
 
+        return
+
     def create_widgets(self):
         """
         Create the widgets for the launcher UI.
@@ -105,6 +111,8 @@ class LauncherUI(ttk.Window):
 
         self.maya_version_cbox = CustomComboBox(self, values=['2024', '2023', '2020'])
         self.prod_or_dev_cbox = CustomComboBox(self, values=['Production', 'Development'])
+
+        return
 
     def run_maya(self):
         """
@@ -136,7 +144,26 @@ class LauncherUI(ttk.Window):
             PhotoImage: The icon.
         """
         return tk.PhotoImage(file=path)
-    
+
+    def set_mode_to_dev_or_prod(self, mode):
+        """
+        Set the environment variables for development mode.
+        """
+        if mode == 'Development':
+            os.environ["MAYA_SHELF_PATH"] = __class__.DEV_SHELF_PATH
+        
+            os.environ['MAYA_NO_CONSOLE_WINDOW'] = '0'
+            os.environ['MAYA_DISABLE_CIP'] = '1'
+            os.environ['MAYA_DISABLE_CLIC_IPM'] = '1'
+            os.environ['MAYA_DISABLE_CER'] = '1'
+
+
+        if mode == 'Production':
+            os.environ["MAYA_SHELF_PATH"] = __class__.PROD_SHELF_PATH
+
+            os.environ['MAYA_NO_CONSOLE_WINDOW'] = '1'
+
+        return
 
 class MenuBar(ttk.Menu):
     """

@@ -14,7 +14,7 @@ class ModelWidget(QtWidgets.QWidget):
 
             self.c_data = c_data
     
-            self.c_component = component.Component(self.c_data.asset_path)
+            self.c_component = component.Component(self.c_data.asset)
 
             self.add_widgets()
             self.add_layouts()
@@ -38,13 +38,13 @@ class ModelWidget(QtWidgets.QWidget):
             self.reference_button.clicked.connect(self.reference_model)
         
         def import_model(self):
-            self.c_component.update_project_path(self.c_data.asset_path)
+            self.c_component.update_project_path(self.c_data.asset)
             self.c_component.import_model_component()
         
         def open_model(self):
-            self.c_component.update_project_path(self.c_data.asset_path)
-            cmds.file(os.path.join(self.c_data.asset_path, 'model', 'model.ma'), open=True, force=True)
+            self.c_component.update_project_path(self.c_data.asset)
+            cmds.file(os.path.join(self.c_data.asset, 'model', 'model.ma'), open=True, force=True)
         
         def reference_model(self):
-            self.c_component.update_project_path(self.c_data.asset_path)
+            self.c_component.update_project_path(self.c_data.asset)
             self.c_component.import_model_component()
