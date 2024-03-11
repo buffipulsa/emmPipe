@@ -232,7 +232,7 @@ QTabBar::tab:!selected:hover
 QPushButton 
 {
 	background-color: qlineargradient(spread:pad, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(82, 82, 82, 255),stop:0.995192 rgba(75, 75, 75, 255));
-	color: #000;
+	color: #FFFFFF;
 	border: 1px solid #606060;
 	border-radius: 2px;
 	padding: 2px;

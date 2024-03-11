@@ -51,9 +51,9 @@ class WorkspaceControl(object):
             cmds.workspaceControl(self.name, edit=True, uiScript=ui_script)
         
         self.add_widget_to_layout(widget)
-        self.set_visible(True)
+        self.restore_ui()
 
-    def restore(self, widget):
+    def restore_widget(self, widget):
         self.add_widget_to_layout(widget)
 
     def add_widget_to_layout(self, widget):
@@ -69,23 +69,8 @@ class WorkspaceControl(object):
     def exists(self):
         return cmds.workspaceControl(self.name, query=True, exists=True)
     
-    def is_visible(self):
-        return cmds.workspaceControl(self.name, query=True, visible=True)
-    
-    def set_visible(self, visible):
-        if visible:
-            cmds.workspaceControl(self.name, edit=True, restore=True)
-        else:
-            cmds.workspaceControl(self.name, edit=True, visible=False)
-    
-    def set_label(self, label):
-        cmds.workspaceControl(self.name, edit=True, label=label)
-    
-    def is_floating(self):
-        return cmds.workspaceControl(self.name, query=True, floating=True)
-    
-    def is_collapsed(self):
-        return cmds.workspaceControl(self.name, query=True, collapse=True)
+    def restore_ui(self):
+        cmds.workspaceControl(self.name, edit=True, restore=True)
     
 
 class DockableUI(QtWidgets.QWidget):
@@ -97,11 +82,10 @@ class DockableUI(QtWidgets.QWidget):
     @classmethod
     def display(cls):
         if cls.ui_instance:
-             cls.ui_instance.show_workspace_control()
+             cls.ui_instance.restore_workspace_control()
         else:
             cls.ui_instance = cls()
-
-
+        
     @classmethod
     def get_workspace_control_name(cls):
          return f'{cls.__name__}WorkspaceControl'
@@ -120,6 +104,11 @@ class DockableUI(QtWidgets.QWidget):
 
         self.setObjectName(self.__class__.__name__)
 
+        self.add_actions()
+        self.add_widgets()
+        self.add_layout()
+        self.add_connections()
+
         self.create_workspace_control()
 
     def add_actions(self):
@@ -137,12 +126,13 @@ class DockableUI(QtWidgets.QWidget):
     def create_workspace_control(self):
         self.workspace_control = WorkspaceControl(self.get_workspace_control_name())
         if self.workspace_control.exists():
-            self.workspace_control.restore(self)
+            self.workspace_control.restore_widget(self)
         else:
             self.workspace_control.create(self.WINDOW_TITLE, self, 
                                           ui_script=self.get_ui_script())
     
-    def show_workspace_control(self):
-        self.workspace_control.set_visible(True)
+    def restore_workspace_control(self):
+        self.workspace_control.restore_ui()
+
 
 

@@ -39,13 +39,8 @@ class MainUI(DockableUI):
     WINDOW_HEIGHT = 600
 
     def __init__(self):
-        super().__init__()
-
         self.c_data = TestData()
-
-        self.add_widgets()
-        self.add_layouts()
-        self.add_connections()
+        super().__init__()
 
         set_stylesheet(self, 'VisualScript')
 
@@ -65,7 +60,7 @@ class MainUI(DockableUI):
     def add_layouts(self):
 
         layout = QVBoxLayout(self)
-        #layout.addStretch()
+
         layout.addWidget(self.tab_bar, alignment=QtCore.Qt.AlignTop)
 
     def add_connections(self):

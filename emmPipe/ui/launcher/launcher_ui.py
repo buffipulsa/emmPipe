@@ -21,7 +21,8 @@ class LauncherUI(ttk.Window):
     
     PLUGIN_PATH = os.path.join(REPO_PATH, "plug-ins")
     ICONS_PATH = os.path.join(REPO_PATH, "icons")
-    SHELF_PATH = os.path.join(REPO_PATH, "shelves")
+    PROD_SHELF_PATH = os.path.join(REPO_PATH, "shelves", 'prod')
+    DEV_SHELF_PATH = os.path.join(REPO_PATH, "shelves", 'dev')
 
     APP_ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'launcher_ui.png')
 
@@ -44,8 +45,6 @@ class LauncherUI(ttk.Window):
 
         self.create_widgets()
 
-        self.set_paths()
-
     def set_paths(self):
         """
         Sets the necessary environment variables for the launcher.
@@ -56,10 +55,14 @@ class LauncherUI(ttk.Window):
         os.environ["PYTHONPATH"] = __class__.REPO_PATH
         os.environ["MAYA_SCRIPT_PATH"] = __class__.MAYA_SCRIPT_PATH
         os.environ["MAYA_PLUG_IN_PATH"] = __class__.PLUGIN_PATH
-        os.environ["MAYA_SHELF_PATH"] = __class__.SHELF_PATH
         os.environ["XBMLANGPATH"] = __class__.ICONS_PATH
         os.environ["EMMPIPE_PROJECTS_PATH"] = __class__.PROJECTS_PATH
         os.environ["EMMPIPE_MODE"] = self.prod_or_dev_cbox.get()
+
+        if os.environ["EMMPIPE_MODE"] == 'Production':
+            os.environ["MAYA_SHELF_PATH"] = __class__.PROD_SHELF_PATH
+        else:
+            os.environ["MAYA_SHELF_PATH"] = __class__.DEV_SHELF_PATH
     
     def set_icon(self):
         """
@@ -107,6 +110,8 @@ class LauncherUI(ttk.Window):
         """
         Opens and runs Maya using the specified Maya version.
         """
+        self.set_paths()
+
         os.startfile(__class__.MAYA_PATH.format(self.get_maya_version()))
         
         return 
