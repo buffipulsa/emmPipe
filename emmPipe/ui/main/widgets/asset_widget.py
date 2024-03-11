@@ -15,11 +15,15 @@ class AssetWidget(QtWidgets.QWidget):
             self.add_widgets()
             self.add_layouts()
             self.add_connections()
-            
+
             self.update_asset_path()
         
         def add_widgets(self):
             
+            self.show_label = QtWidgets.QLabel('Show:')
+            self.asset_label = QtWidgets.QLabel('Asset:')
+            self.asset_label.setIndent(10)
+
             self.show_cbox = QtWidgets.QComboBox()
             self.asset_cbox = QtWidgets.QComboBox()
 
@@ -31,15 +35,26 @@ class AssetWidget(QtWidgets.QWidget):
             self.asset_cbox.setCurrentText('chrBaseMale')
 
         def add_layouts(self):
-            showasset_layout = QHBoxLayout(self)
-            showasset_layout.addSpacing(10)
+            layout = QVBoxLayout(self)
+            layout.addSpacing(10)
             
-            showasset_layout.addWidget(self.show_cbox)
-            showasset_layout.addWidget(self.asset_cbox)
+            label_layout = QHBoxLayout()
+            label_layout.addSpacing(15)
+
+            label_layout.addWidget(self.show_label)
+            label_layout.addWidget(self.asset_label)
+
+            cbox_layout = QHBoxLayout()
+            cbox_layout.addSpacing(10)
+
+            cbox_layout.addWidget(self.show_cbox)
+            cbox_layout.addWidget(self.asset_cbox)
+
+            layout.addLayout(label_layout)
+            layout.addLayout(cbox_layout)
         
         def add_connections(self):
             self.show_cbox.currentIndexChanged.connect(self.update_assets)
-            #self.show_cbox.currentIndexChanged.connect(self.update_asset_path)
             self.asset_cbox.currentIndexChanged.connect(self.update_asset_path)
 
         def get_projects(self):

@@ -14,6 +14,8 @@ from .widgets.asset_widget import AssetWidget
 from .widgets.model_widget import ModelWidget
 from .widgets.rig_widget import RigWidget
 
+from emmPipe.rig.component import component
+
 class TestData(QObject):
     
         def __init__(self):
@@ -53,21 +55,24 @@ class MainUI(DockableUI):
         self.tab_bar.setFixedWidth(self.WINDOW_WIDTH)
 
         self.asset_widget = AssetWidget(self.c_data, self)
-        model_widget = ModelWidget(self.c_data, self)
+        self.model_widget = ModelWidget(self.c_data, self)
         self.rig_widget = RigWidget(self.c_data, self)
 
         self.tab_bar.add_tab(self.asset_widget, 'Asset')
-        self.tab_bar.add_tab(model_widget, 'Model')
+        self.tab_bar.add_tab(self.model_widget, 'Model')
         self.tab_bar.add_tab(self.rig_widget, 'Rig')
 
     def add_layouts(self):
 
         layout = QVBoxLayout(self)
-        layout.addStretch()
-        layout.addWidget(self.tab_bar)
-    
+        #layout.addStretch()
+        layout.addWidget(self.tab_bar, alignment=QtCore.Qt.AlignTop)
+
     def add_connections(self):
-        self.rig_widget.button.clicked.connect(self.c_data.print_asset_path)
+        
+
+        self.model_widget.add_connections()
+        self.rig_widget.add_connections()
 
     def center_window(self, window):
 

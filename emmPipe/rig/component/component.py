@@ -16,10 +16,24 @@ class Component:
         projectPath (str): The path to the project.
     """
 
-    def __init__(self, projectPath):
-        self.projectPath = projectPath
+    def __init__(self, project_path):
+        self.project_path = project_path
 
-    def browseComponent(self, component):
+    def update_project_path(self, new_path):
+        """
+        Updates the project path.
+
+        Args:
+            new_path (str): The new path to the project.
+
+        Returns:
+            None
+        """
+        self.project_path = new_path
+    
+        return
+
+    def browse_component(self, component):
         """
         Opens the specified component in the file browser.
 
@@ -29,113 +43,113 @@ class Component:
         Returns:
             None
         """
-        componentPath = os.path.join(self.projectPath, component)
+        component_path = os.path.join(self.project_path, component)
 
-        if os.path.exists(componentPath):
-            os.system('start {}'.format(componentPath))
+        if os.path.exists(component_path):
+            os.system('start {}'.format(component_path))
         else:
             cmds.warning('{} component does not exist on disk.'.format(component))
 
         return
 
-    def importModelComponent(self):
+    def import_model_component(self):
         """
         Imports the model component.
 
         Returns:
             None
         """
-        cmds.file(self.getFilePath('model'), i=True)
+        cmds.file(self.get_file_path('model'), i=True)
 
         print('#' * 50)
-        print('Imported model component from: {}'.format(self.getFilePath('model')))
+        print('Imported model component from: {}'.format(self.get_file_path('model')))
         print('#' * 50)
 
         return
 
-    def importBlueprintComponent(self):
+    def import_blueprint_component(self):
         """
         Imports the blueprint component.
 
         Returns:
             None
         """
-        componentPath = self.getComponentPath('blueprint')
-        componentVersion = self.getComponentVersion(componentPath, latest=True)
-        fullPath = os.path.join(componentPath, componentVersion)
+        component_path = self.get_component_path('blueprint')
+        component_version = self.get_component_version(component_path, latest=True)
+        full_path = os.path.join(component_path, component_version)
 
-        cmds.file('{}/blueprint.ma'.format(fullPath), i=True)
+        cmds.file('{}/blueprint.ma'.format(full_path), i=True)
 
         print('#' * 50)
-        print('Imported blueprint component from: {}'.format(fullPath))
+        print('Imported blueprint component from: {}'.format(full_path))
         print('#' * 50)
 
         return
 
-    def exportBlueprintComponent(self):
+    def export_blueprint_component(self):
         """
         Exports the blueprint component.
 
         Returns:
             None
         """
-        componentPath = self.getComponentPath('blueprint')
-        componentVersion = self.getComponentVersion(componentPath, latest=True)
-        fullPath = os.path.join(componentPath, componentVersion)
+        component_path = self.get_component_path('blueprint')
+        component_version = self.get_component_version(component_path, latest=True)
+        full_path = os.path.join(component_path, component_version)
 
         cmds.select('grp_blueprint')
-        cmds.file('{}/blueprint'.format(fullPath), force=True, type='mayaAscii', exportSelected=True)
+        cmds.file('{}/blueprint'.format(full_path), force=True, type='mayaAscii', exportSelected=True)
 
         print('#' * 50)
-        print('Exported blueprint component to: {}'.format(fullPath))
+        print('Exported blueprint component to: {}'.format(full_path))
         print('#' * 50)
 
         return
 
-    def saveHoldFile(self):
+    def save_hold_file(self):
         """
         Saves the hold file.
 
         Returns:
             None
         """
-        componentPath = self.getComponentPath('hold')
-        holdFilePath = '{}/hold_001.ma'.format(componentPath)
+        component_path = self.get_component_path('hold')
+        hold_file_path = '{}/hold_001.ma'.format(component_path)
 
-        cmds.file(rename=holdFilePath)
+        cmds.file(rename=hold_file_path)
         cmds.file(save=True, type='mayaAscii')
 
         print('#'*50)
-        print('Exported hold component to: {}'.format(holdFilePath))
+        print('Exported hold component to: {}'.format(hold_file_path))
         print('#' * 50)
 
         return
 
-    def openHoldFile(self):
+    def open_hold_file(self):
         """
         Opens the hold file.
 
         Returns:
             None
         """
-        cmds.file(self.getFilePath('hold'), o=True, force=True)
+        cmds.file(self.get_file_path('hold'), o=True, force=True)
 
         print('#' * 50)
-        print('Imported model component from: {}'.format(self.getFilePath('model')))
+        print('Imported model component from: {}'.format(self.get_file_path('model')))
         print('#' * 50)
 
         return
 
-    def exportControlsComponent(self):
+    def export_controls_component(self):
         """
         Exports the control shapes.
 
         Returns:
             None
         """
-        componentPath = self.getComponentPath('controls')
-        componentVersion = self.getComponentVersion(componentPath, latest=True)
-        fullPath = os.path.join(componentPath, componentVersion)
+        component_path = self.get_component_path('controls')
+        component_version = self.get_component_version(component_path, latest=True)
+        full_path = os.path.join(component_path, component_version)
 
         controls = cmds.ls(sl=True, type='transform', shapes=False)
         if not controls:
@@ -146,196 +160,196 @@ class Component:
                 return
 
         for control in controls:
-            controlData = self.cTools.getCurveData(control)
+            control_data = self.cTools.get_curve_data(control)
 
-            fileOut = open('{}/{}.json'.format(fullPath, control), 'w')
-            json.dump(controlData, fileOut, indent=2)
-            fileOut.close()
+            file_out = open('{}/{}.json'.format(full_path, control), 'w')
+            json.dump(control_data, file_out, indent=2)
+            file_out.close()
 
-            print('Exported {} to: {}'.format(control, fullPath))
+            print('Exported {} to: {}'.format(control, full_path))
 
         return
 
-    def importControlsComponent(self):
+    def import_controls_component(self):
         """
         Imports the control shapes.
 
         Returns:
             None
         """
-        componentPath = self.getComponentPath('controls')
-        componentVersion = self.getComponentVersion(componentPath, latest=True)
-        fullPath = os.path.join(componentPath, componentVersion)
+        component_path = self.get_component_path('controls')
+        component_version = self.get_component_version(component_path, latest=True)
+        full_path = os.path.join(component_path, component_version)
 
-        importedControls = []
+        imported_controls = []
 
         controls = cmds.ls('ctrl_*', type='transform', shapes=False)
         for control in controls:
             if cmds.listRelatives(control, shapes=True):
-                ctrlShapes = cmds.listRelatives(control, shapes=True)
+                ctrl_shapes = cmds.listRelatives(control, shapes=True)
 
-                for ctrlShape in ctrlShapes:
-                    componentFile = '{}.json'.format(control)
-                    if componentFile in os.listdir(fullPath):
-                        if cmds.objExists(ctrlShape):
-                            fileIn = open(os.path.join(fullPath, componentFile))
-                            controlData = json.load(fileIn)
-                            fileIn.close()
+                for ctrl_shape in ctrl_shapes:
+                    component_file = '{}.json'.format(control)
+                    if component_file in os.listdir(full_path):
+                        if cmds.objExists(ctrl_shape):
+                            file_in = open(os.path.join(full_path, component_file))
+                            control_data = json.load(file_in)
+                            file_in.close()
 
-                            controlCvs = cmds.ls('{}.cv[*]'.format(ctrlShape), flatten=True)
-                            for i, cv in enumerate(controlCvs):
-                                cvShape = '{}.cv[{}]'.format(ctrlShape, i)
-                                cmds.move(controlData[cvShape][0], controlData[cvShape][1], controlData[cvShape][2],
+                            control_cvs = cmds.ls('{}.cv[*]'.format(ctrl_shape), flatten=True)
+                            for i, cv in enumerate(control_cvs):
+                                cv_shape = '{}.cv[{}]'.format(ctrl_shape, i)
+                                cmds.move(control_data[cv_shape][0], control_data[cv_shape][1], control_data[cv_shape][2],
                                           cv, localSpace=True)
 
-            importedControls.append(control)
+            imported_controls.append(control)
 
-        if importedControls:
+        if imported_controls:
             print('#' * 50)
-            print('Imported the following control shapes from: {}'.format(fullPath))
-            for control in importedControls:
+            print('Imported the following control shapes from: {}'.format(full_path))
+            for control in imported_controls:
                 print(control)
             print('#' * 50)
 
         return
 
 
-    def exportDeformersComponent(self):
+    def export_deformers_component(self):
         """
         Exports the skinCluster weights and ngSkinTools data.
 
         Returns:
             None
         """
-        componentPath = self.getComponentPath('deformers')
-        componentVersion = self.getComponentVersion(componentPath, latest=True)
-        fullPath = os.path.join(componentPath, componentVersion)
+        component_path = self.get_component_path('deformers')
+        component_version = self.get_component_version(component_path, latest=True)
+        full_path = os.path.join(component_path, component_version)
 
-        skinweightsExported = []
+        skinweights_exported = []
 
         c_ngskintools_data = ngSkinToolsData.NgSkinData()
 
         selection = cmds.ls(sl=True)
         for obj in selection:
             try:
-                skincluster.saveSkinclusterData(obj, fullPath)
-                skinweightsExported.append(obj)
+                skincluster.saveSkinclusterData(obj, full_path)
+                skinweights_exported.append(obj)
             except:
                 print('{} does not have a skincluster node'.format(obj))
 
-            self.c_ngskintools_data.exportNgSkinData(obj, fullPath)
+            self.c_ngskintools_data.exportNgSkinData(obj, full_path)
 
-        if skinweightsExported:
+        if skinweights_exported:
             print('#' * 50)
-            print('Exported skinCluster weights for following objects to: {}/skincluster'.format(fullPath))
-            for exportedWeightsObj in skinweightsExported:
-                print(exportedWeightsObj)
+            print('Exported skinCluster weights for following objects to: {}/skincluster'.format(full_path))
+            for exported_weights_obj in skinweights_exported:
+                print(exported_weights_obj)
             print('#' * 50)
 
         return
 
-    def importDeformersComponent(self, ngSkin=True):
+    def import_deformers_component(self, ng_skin=True):
         """
         Imports the skinCluster weights and ngSkinTools data.
 
         Args:
-            ngSkin (bool, optional): Whether to import ngSkinTools data. Defaults to True.
+            ng_skin (bool, optional): Whether to import ngSkinTools data. Defaults to True.
 
         Returns:
             None
         """
-        componentPath = self.getComponentPath('deformers')
-        componentVersion = self.getComponentVersion(componentPath, latest=True)
-        fullPath = os.path.join(componentPath, componentVersion)
+        component_path = self.get_component_path('deformers')
+        component_version = self.get_component_version(component_path, latest=True)
+        full_path = os.path.join(component_path, component_version)
 
-        skinweightsImported = []
+        skinweights_imported = []
 
-        skinclusterPath = os.path.join(fullPath, 'skincluster')
-        if os.path.exists(skinclusterPath):
-            for obj in os.listdir(skinclusterPath):
+        skincluster_path = os.path.join(full_path, 'skincluster')
+        if os.path.exists(skincluster_path):
+            for obj in os.listdir(skincluster_path):
                 obj = obj.split('.')[0]
                 if cmds.objExists(obj):
-                    skincluster.loadSkinclusterData(obj, skinclusterPath)
-                    skinweightsImported.append(obj)
+                    skincluster.load_skincluster_data(obj, skincluster_path)
+                    skinweights_imported.append(obj)
 
-        if ngSkin:
+        if ng_skin:
             c_ngskintools_data = ngSkinToolsData.NgSkinData()
 
-            ngSkinDataPath = os.path.join(fullPath, 'ngSkinData')
-            if os.path.exists(ngSkinDataPath):
-                for obj in os.listdir(ngSkinDataPath):
+            ng_skin_data_path = os.path.join(full_path, 'ngSkinData')
+            if os.path.exists(ng_skin_data_path):
+                for obj in os.listdir(ng_skin_data_path):
                     obj = obj.split('.')[0]
                     if cmds.objExists(obj):
-                        c_ngskintools_data.importNgSkinData(obj, ngSkinDataPath)
+                        c_ngskintools_data.import_ng_skin_data(obj, ng_skin_data_path)
 
-        if skinweightsImported:
+        if skinweights_imported:
             print('#' * 50)
-            print('Imported skinCluster weights for following objects to: {}/skincluster'.format(fullPath))
-            for importedWeightsObj in skinweightsImported:
-                print(importedWeightsObj)
+            print('Imported skinCluster weights for following objects to: {}/skincluster'.format(full_path))
+            for imported_weights_obj in skinweights_imported:
+                print(imported_weights_obj)
             print('#' * 50)
 
         return
 
-    def exportMiscComponent(self):
+    def export_misc_component(self):
         """
         Exports the misc component.
 
         Returns:
             None
         """
-        componentPath = self.getComponentPath('misc')
-        componentVersion = self.getComponentVersion(componentPath, latest=True)
-        fullPath = os.path.join(componentPath, componentVersion)
+        component_path = self.get_component_path('misc')
+        component_version = self.get_component_version(component_path, latest=True)
+        full_path = os.path.join(component_path, component_version)
 
         cmds.select('grp_misc')
-        cmds.file('{}/misc.ma'.format(fullPath), force=True, type='mayaAscii', exportSelected=True)
+        cmds.file('{}/misc.ma'.format(full_path), force=True, type='mayaAscii', exportSelected=True)
 
         print('#' * 50)
-        print('Exported misc component to: {}'.format(fullPath))
+        print('Exported misc component to: {}'.format(full_path))
         print('#' * 50)
 
         return
 
-    def importMiscComponent(self):
+    def import_misc_component(self):
         """
         Imports the misc component.
 
         Returns:
             None
         """
-        componentPath = self.getComponentPath('misc')
-        componentVersion = self.getComponentVersion(componentPath, latest=True)
-        fullPath = os.path.join(componentPath, componentVersion)
+        component_path = self.get_component_path('misc')
+        component_version = self.get_component_version(component_path, latest=True)
+        full_path = os.path.join(component_path, component_version)
 
-        cmds.file('{}/misc.ma'.format(fullPath), i=True)
+        cmds.file('{}/misc.ma'.format(full_path), i=True)
 
         print('#' * 50)
-        print('Imported misc component from: {}'.format(fullPath))
+        print('Imported misc component from: {}'.format(full_path))
         print('#' * 50)
 
         return
 
-    def exportPSDData(self):
+    def export_psd_data(self):
         """
         Exports the PSD data.
 
         Returns:
             None
         """
-        componentPath = self.getComponentPath('psdData')
-        componentVersion = self.getComponentVersion(componentPath, latest=True)
-        fullPath = os.path.join(componentPath, componentVersion)
+        component_path = self.get_component_path('psdData')
+        component_version = self.get_component_version(component_path, latest=True)
+        full_path = os.path.join(component_path, component_version)
 
-        psdGrp = cmds.ls(sl=True, type='transform', shapes=False)
-        if not psdGrp:
-            psdGrp = cmds.ls('*_PSD_Data_Grp', type='transform', shapes=False)
+        psd_grp = cmds.ls(sl=True, type='transform', shapes=False)
+        if not psd_grp:
+            psd_grp = cmds.ls('*_PSD_Data_Grp', type='transform', shapes=False)
 
-            if not psdGrp:
+            if not psd_grp:
                 cmds.warning('No PSD Data group in scene, none will be exported')
                 return
 
-        for grp in psdGrp:
+        for grp in psd_grp:
             attrs = cmds.listAttr(grp)
 
             values_dict = {}
@@ -350,67 +364,67 @@ class Component:
             data = {grp: values_dict}
             # data[grp] = values_dict
 
-            fileOut = open('{}/{}.json'.format(fullPath, grp), 'w')
-            json.dump(data, fileOut, indent=2)
-            fileOut.close()
+            file_out = open('{}/{}.json'.format(full_path, grp), 'w')
+            json.dump(data, file_out, indent=2)
+            file_out.close()
 
         return
 
-    def importPSDData(self):
+    def import_psd_data(self):
         """
         Imports the PSD data.
 
         Returns:
             None
         """
-        componentPath = self.getComponentPath('psdData')
-        componentVersion = self.getComponentVersion(componentPath, latest=True)
-        fullPath = os.path.join(componentPath, componentVersion)
+        component_path = self.get_component_path('psdData')
+        component_version = self.get_component_version(component_path, latest=True)
+        full_path = os.path.join(component_path, component_version)
 
-        psdGrp = cmds.ls(sl=True, type='transform', shapes=False)
-        if not '_PSD_Data_Grp' in psdGrp:
-            psdGrp = None
-        if not psdGrp:
-            psdGrp = cmds.ls('*_PSD_Data_Grp', type='transform', shapes=False)
+        psd_grp = cmds.ls(sl=True, type='transform', shapes=False)
+        if not '_PSD_Data_Grp' in psd_grp:
+            psd_grp = None
+        if not psd_grp:
+            psd_grp = cmds.ls('*_PSD_Data_Grp', type='transform', shapes=False)
 
-            if not psdGrp:
+            if not psd_grp:
                 cmds.warning('No PSD Data group in scene, none will be imported')
                 return
 
-        for grp in psdGrp:
-            componentFile = '{}.json'.format(grp)
-            if componentFile in os.listdir(fullPath):
+        for grp in psd_grp:
+            component_file = '{}.json'.format(grp)
+            if component_file in os.listdir(full_path):
                 if cmds.objExists(grp):
-                    fileIn = open(os.path.join(fullPath, componentFile))
-                    psdData = json.load(fileIn)
-                    fileIn.close()
-                    for attr in psdData[grp].keys():
+                    file_in = open(os.path.join(full_path, component_file))
+                    psd_data = json.load(file_in)
+                    file_in.close()
+                    for attr in psd_data[grp].keys():
                         if cmds.objExists(grp + '.' + attr):
-                            cmds.setAttr(grp + '.' + attr, psdData[grp][attr])
+                            cmds.setAttr(grp + '.' + attr, psd_data[grp][attr])
 
         return
 
-    def importTargetsComponent(self):
+    def import_targets_component(self):
         """
         Imports the targets component from the latest version.
 
         Returns:
             None
         """
-        componentPath = self.getComponentPath('targets')
-        componentVersion = self.getComponentVersion(componentPath, latest=True)
-        fullPath = os.path.join(componentPath, componentVersion)
+        component_path = self.get_component_path('targets')
+        component_version = self.get_component_version(component_path, latest=True)
+        full_path = os.path.join(component_path, component_version)
 
-        cmds.file('{}/targets.ma'.format(fullPath), i=True)
+        cmds.file('{}/targets.ma'.format(full_path), i=True)
 
         print('#' * 50)
-        print('Imported targets component from: {}'.format(fullPath))
+        print('Imported targets component from: {}'.format(full_path))
         print('#' * 50)
 
         return
 
 
-    def getFilePath(self, component):
+    def get_file_path(self, component):
         """
         Retrieves the file path of the latest version of a component.
 
@@ -420,19 +434,19 @@ class Component:
         Returns:
             str: The file path of the latest version of the component.
         """
-        componentPath = self.getComponentPath(component)
-        fullDirectory = os.listdir(componentPath)
+        component_path = self.get_component_path(component)
+        full_directory = os.listdir(component_path)
 
-        for file in fullDirectory:
+        for file in full_directory:
             if not file.startswith('{}_'.format(component)) and not file.endswith('.ma'):
-                fullDirectory.remove(file)
+                full_directory.remove(file)
 
-        filePath = os.path.join(componentPath, fullDirectory[-1])
+        file_path = os.path.join(component_path, full_directory[-1])
 
-        return filePath
+        return file_path
 
 
-    def getComponentPath(self, component):
+    def get_component_path(self, component):
         """
         Retrieves the path of a component.
 
@@ -442,30 +456,30 @@ class Component:
         Returns:
             str: The path of the component.
         """
-        componentPath = os.path.join(self.projectPath, component)
-        if not os.path.exists(componentPath):
-            os.makedirs(componentPath)
+        component_path = os.path.join(self.project_path, component)
+        if not os.path.exists(component_path):
+            os.makedirs(component_path)
 
-        return componentPath
+        return component_path
 
 
-    def getComponentVersion(self, componentPath, version=1, latest=True):
+    def get_component_version(self, component_path, version=1, latest=True):
         """
         Retrieves the version of a component.
 
         Args:
-            componentPath: (str) The path of the component.
+            component_path: (str) The path of the component.
             version: (int) The specific version to retrieve. Default is 1.
             latest: (bool) Whether to retrieve the latest version. Default is True.
 
         Returns:
             str: The version of the component.
         """
-        versions = os.listdir(componentPath)
+        versions = os.listdir(component_path)
         if not versions:
-            firstVersion = '{}_001'.format(componentPath.split('/')[-1])
-            os.makedirs(os.path.join(componentPath, firstVersion))
-            versions.append(firstVersion)
+            first_version = '{}_001'.format(component_path.split('/')[-1])
+            os.makedirs(os.path.join(component_path, first_version))
+            versions.append(first_version)
 
         if latest:
             return versions[-1]
@@ -473,7 +487,7 @@ class Component:
             return versions[version]
 
 
-    def versionUpComponent(self, component):
+    def version_up_component(self, component):
         """
         Creates a new version of a component.
 
@@ -483,42 +497,42 @@ class Component:
         Returns:
             None
         """
-        componentPath = self.getComponentPath(component)
-        currentVersion = self.getComponentVersion(componentPath, latest=True)
+        component_path = self.get_component_path(component)
+        current_version = self.get_component_version(component_path, latest=True)
 
-        newVersionNumber = format(int(currentVersion.split('_')[-1]) + 1, '03d')
+        new_version_number = format(int(current_version.split('_')[-1]) + 1, '03d')
 
-        newVersion = '{}_{}'.format(currentVersion.split('_')[0], str(newVersionNumber))
+        new_version = '{}_{}'.format(current_version.split('_')[0], str(new_version_number))
 
-        source = os.path.join(componentPath, currentVersion)
-        destination = os.path.join(componentPath, newVersion)
+        source = os.path.join(component_path, current_version)
+        destination = os.path.join(component_path, new_version)
 
         shutil.copytree(source, destination)
 
-        print('Created a new component version: {} in {}'.format(newVersion, componentPath))
+        print('Created a new component version: {} in {}'.format(new_version, component_path))
 
         return
 
 
-    def incrimentFile(self, filePath):
+    def increment_file(self, file_path):
         """
         Increments the file name in a given file path.
 
         Args:
-            filePath: (str) The file path.
+            file_path: (str) The file path.
 
         Returns:
             str: The new file path with the incremented file name.
         """
-        fullDirectory = os.listdir(filePath)
+        full_directory = os.listdir(file_path)
 
-        latestVersionStr = ((fullDirectory[-1].split('_')[-1])).split('.')[0]
-        newVersionStr = '{:03d}'.format(int(latestVersionStr)+1)
+        latest_version_str = ((full_directory[-1].split('_')[-1])).split('.')[0]
+        new_version_str = '{:03d}'.format(int(latest_version_str)+1)
 
-        newFileName = '{}_{}'.format(fullDirectory[-1].split('_')[0], newVersionStr)
-        newFilePath = '{}/{}.ma'.format(filePath, newFileName)
+        new_file_name = '{}_{}'.format(full_directory[-1].split('_')[0], new_version_str)
+        new_file_path = '{}/{}.ma'.format(file_path, new_file_name)
 
-        return newFilePath
+        return new_file_path
 
 
 
