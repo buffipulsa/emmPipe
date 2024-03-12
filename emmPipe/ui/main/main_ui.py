@@ -50,6 +50,7 @@ class MainUI(DockableUI):
 
     def add_connections(self):
         
+        self.asset_widget.add_connections()
         self.model_widget.add_connections()
         self.rig_widget.add_connections()
 

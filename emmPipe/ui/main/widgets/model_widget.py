@@ -33,20 +33,20 @@ class ModelWidget(QtWidgets.QWidget):
             main_layout.addWidget(self.reference_button)
         
         def add_connections(self):
-            self.c_component.update_project_path(self.c_data.asset)
+
+            self.import_button.clicked.connect(lambda _: setattr(self.c_component, 'project_path', self.c_data.component_path))
+            self.open_button.clicked.connect(lambda _: setattr(self.c_component, 'project_path', self.c_data.component_path))
 
             self.import_button.clicked.connect(self.import_model)
             self.open_button.clicked.connect(self.open_model)
             self.reference_button.clicked.connect(self.reference_model)
         
         def import_model(self):
-            #self.c_component.update_project_path(self.c_data.asset)
             self.c_component.import_model_component()
         
         def open_model(self):
-            #self.c_component.update_project_path(self.c_data.asset)
-            cmds.file(os.path.join(self.c_data.asset, 'model', 'model.ma'), open=True, force=True)
-        
+            self.c_component.open_model_component()
+
         def reference_model(self):
             #self.c_component.update_project_path(self.c_data.asset)
             self.c_component.import_model_component()

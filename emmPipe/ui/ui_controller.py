@@ -10,10 +10,26 @@ class UIController(QObject):
         def __init__(self):
             super().__init__()
 
-            self.show = None
-            self.asset = None
+            self._show = None
+            self._asset = None
 
             self.build_script_path = 'build/build.py'
+
+        @property
+        def show(self):
+            return self._show
+        
+        @show.setter
+        def show(self, value):
+            self._show = value
+        
+        @property
+        def asset(self):
+            return self._asset
+        
+        @asset.setter
+        def asset(self, value):
+            self._asset = value
 
         @property
         def projects_path(self):
@@ -21,16 +37,7 @@ class UIController(QObject):
     
         @property
         def component_path(self):
-            print(self.show)
-            print(self.asset)
-            print(os.path.join(self.projects_path, self.show, self.asset))
             return os.path.join(self.projects_path, self.show, self.asset)
 
         def print_build_script_path(self):
-            print(os.path.join(self.projects_path, self.show, self.asset, self.build_script_path))
-
-        def update_show(self, show):
-            self.show = show
-
-        def update_asset(self, asset):
-            self.asset = asset
+            print(os.path.join(self.projects_path, self.show, self.asset, self.build_script_path)) 

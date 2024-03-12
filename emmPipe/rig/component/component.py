@@ -17,9 +17,11 @@ class Component:
     """
 
     def __init__(self, project_path):
-        self.project_path = project_path
 
-    def update_project_path(self, new_path):
+        self._project_path = project_path
+
+    @property
+    def project_path(self):
         """
         Updates the project path.
 
@@ -29,8 +31,35 @@ class Component:
         Returns:
             None
         """
-        self.project_path = new_path
+        return self._project_path
     
+    @project_path.setter
+    def project_path(self, new_value):
+        """
+        Updates the project path.
+
+        Args:
+            new_path (str): The new path to the project.
+
+        Returns:
+            None
+        """
+        self._project_path = new_value
+    
+    def browse_all_components(self):
+        """
+        Opens all components in the file browser.
+
+        Returns:
+            None
+        """
+        components_path = self.project_path
+
+        if os.path.exists(components_path):
+            os.system('start {}'.format(components_path))
+        else:
+            cmds.warning(f'{components_path} path does not exist on disk.')
+
         return
 
     def browse_component(self, component):
@@ -63,6 +92,21 @@ class Component:
 
         print('#' * 50)
         print('Imported model component from: {}'.format(self.get_file_path('model')))
+        print('#' * 50)
+
+        return
+    
+    def open_model_component(self):
+        """
+        Opens the model component.
+
+        Returns:
+            None
+        """
+        cmds.file(self.get_file_path('model'), o=True, force=True)
+
+        print('#' * 50)
+        print('Opened model component from: {}'.format(self.get_file_path('model')))
         print('#' * 50)
 
         return
@@ -435,9 +479,8 @@ class Component:
             str: The file path of the latest version of the component.
         """
         component_path = self.get_component_path(component)
-        print (component_path)
         full_directory = os.listdir(component_path)
-        print(full_directory)
+
         for file in full_directory:
             if not file.startswith('{}_'.format(component)) and not file.endswith('.ma'):
                 full_directory.remove(file)
