@@ -435,8 +435,9 @@ class Component:
             str: The file path of the latest version of the component.
         """
         component_path = self.get_component_path(component)
+        print (component_path)
         full_directory = os.listdir(component_path)
-
+        print(full_directory)
         for file in full_directory:
             if not file.startswith('{}_'.format(component)) and not file.endswith('.ma'):
                 full_directory.remove(file)
