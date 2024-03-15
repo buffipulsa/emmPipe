@@ -9,15 +9,16 @@ from emmPipe.ui.osseous.osseousUI import OsseousUI
 
 class RigWidget(QtWidgets.QWidget):
     
-        def __init__(self, c_data, parent=None):
+        def __init__(self, c_data, c_component, parent=None):
             super().__init__(parent)
     
             self.c_data = c_data
+            self.c_component = c_component
 
             self.add_widgets()
             self.add_layouts()
 
-            self.update_build_script_path()
+            #self.update_build_script_path()
         
         def add_widgets(self):
             
