@@ -107,10 +107,11 @@ class LauncherUI(ttk.Window):
         self.menu_bar = MenuBar(self)
         self.config(menu=self.menu_bar)
 
+        self.prod_or_dev_cbox = CustomComboBox(self, values=['Production', 'Development'])
+
         self.maya_button = MayaIconButton(self, command=self.run_maya)
 
         self.maya_version_cbox = CustomComboBox(self, values=['2024', '2023', '2020'])
-        self.prod_or_dev_cbox = CustomComboBox(self, values=['Production', 'Development'])
 
         return
 
@@ -198,7 +199,7 @@ class CustomComboBox(ttk.Combobox):
         super(CustomComboBox, self).__init__(master, **kwargs)
         self["values"] = values
         self.set(values[0])
-        self.pack(pady=5)
+        self.pack(pady=20)
 
         self.bind("<FocusIn>", self.on_combobox_click)
         self.bind("<FocusOut>", self.on_combobox_leave)
@@ -242,7 +243,7 @@ class MayaIconButton(ttk.Button):
         super(MayaIconButton, self).__init__(master, **kwargs)
         self.icon = tk.PhotoImage(file=f'{master.ICONS_PATH}/mayaico.png')
         self.config(image=self.icon)
-        self.pack(pady=20)
+        self.pack()
     
 
 if __name__ == "__main__":
