@@ -8,42 +8,67 @@ import maya.cmds as cmds
 from emmPipe.rig.component import component
 
 class ModelWidget(QtWidgets.QWidget):
-    
-        def __init__(self, c_data, c_component, parent=None):
-            super().__init__(parent)
+    """
+    A widget for handling model-related functionality.
 
-            self.c_data = c_data
-            self.c_component = c_component
+    Args:
+        c_data (CData): The data object.
+        c_component (CComponent): The component object.
+        parent (QWidget, optional): The parent widget. Defaults to None.
+    """
 
-            self.add_widgets()
-            self.add_layouts()
-        
-        def add_widgets(self):
-            
-            self.import_button = QtWidgets.QPushButton('Import Model')
-            self.open_button = QtWidgets.QPushButton('Open Model')
-            self.reference_button = QtWidgets.QPushButton('Reference Model')
+    def __init__(self, c_data, c_component, parent=None):
+        super().__init__(parent)
 
-        def add_layouts(self):
-            main_layout = QVBoxLayout(self)
-            
-            main_layout.addWidget(self.import_button)
-            main_layout.addWidget(self.open_button)
-            main_layout.addWidget(self.reference_button)
-        
-        def add_connections(self):
-            self.import_button.clicked.connect(self.import_model)
-            self.open_button.clicked.connect(self.open_model)
-            self.reference_button.clicked.connect(self.reference_model)
-        
-        def import_model(self):
-            self.c_component.project_path = self.c_data.component_path
-            self.c_component.import_model_component()
-        
-        def open_model(self):
-            self.c_component.project_path = self.c_data.component_path
-            self.c_component.open_model_component()
+        self.c_data = c_data
+        self.c_component = c_component
 
-        def reference_model(self):
-            self.c_component.project_path = self.c_data.component_path
-            self.c_component.import_model_component()
+        self.add_widgets()
+        self.add_layouts()
+
+    def add_widgets(self):
+        """
+        Add widgets to the widget layout.
+        """
+        self.import_button = QtWidgets.QPushButton('Import Model')
+        self.open_button = QtWidgets.QPushButton('Open Model')
+        self.reference_button = QtWidgets.QPushButton('Reference Model')
+
+    def add_layouts(self):
+        """
+        Add layouts to the widget.
+        """
+        main_layout = QVBoxLayout(self)
+
+        main_layout.addWidget(self.import_button)
+        main_layout.addWidget(self.open_button)
+        main_layout.addWidget(self.reference_button)
+
+    def add_connections(self):
+        """
+        Add signal-slot connections for the widget.
+        """
+        self.import_button.clicked.connect(self.import_model)
+        self.open_button.clicked.connect(self.open_model)
+        self.reference_button.clicked.connect(self.reference_model)
+
+    def import_model(self):
+        """
+        Imports the model component.
+        """
+        self.c_component.project_path = self.c_data.component_path
+        self.c_component.import_model_component()
+
+    def open_model(self):
+        """
+        Opens the model component.
+        """
+        self.c_component.project_path = self.c_data.component_path
+        self.c_component.open_model_component()
+
+    def reference_model(self):
+        """
+        References the model component.
+        """
+        self.c_component.project_path = self.c_data.component_path
+        self.c_component.reference_model_component()

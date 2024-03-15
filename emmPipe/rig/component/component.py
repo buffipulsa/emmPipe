@@ -110,6 +110,21 @@ class Component:
         print('#' * 50)
 
         return
+    
+    def reference_model_component(self):
+        """
+        References the model component.
+
+        Returns:
+            None
+        """
+        cmds.file(self.get_file_path('model'), reference=True, namespace='model')
+
+        print('#' * 50)
+        print('Referenced model component from: {}'.format(self.get_file_path('model')))
+        print('#' * 50)
+
+        return
 
     def import_blueprint_component(self):
         """

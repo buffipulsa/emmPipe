@@ -4,29 +4,42 @@ from PySide2 import QtWidgets
 from PySide2.QtWidgets import QVBoxLayout
 
 class RigWidget(QtWidgets.QWidget):
+    """
+    A widget for handling rig-related functionality.
     
-        def __init__(self, c_data, c_component, parent=None):
-            super().__init__(parent)
+    Args:
+        c_data (CData): The data object.
+        c_component (CComponent): The component object.
+        parent (QWidget, optional): The parent widget. Defaults to None.
+    """
     
-            self.c_data = c_data
-            self.c_component = c_component
+    def __init__(self, c_data, c_component, parent=None):
+        super().__init__(parent)
 
-            self.add_widgets()
-            self.add_layouts()
+        self.c_data = c_data
+        self.c_component = c_component
 
-            #self.update_build_script_path()
-        
-        def add_widgets(self):
-            
-            self.button = QtWidgets.QPushButton('Build')
+        self.add_widgets()
+        self.add_layouts()
 
-        def add_layouts(self):
-            main_layout = QVBoxLayout(self)
-            
-            main_layout.addWidget(self.button)
-        
-        def add_connections(self):
-            pass
+        #self.update_build_script_path()
+    
+    def add_widgets(self):
+        """
+        Add widgets to the widget layout.
+        """
+        self.button = QtWidgets.QPushButton('Build')
 
-        def print_component_path(self):
-            print(self.c_data.component_path)
+    def add_layouts(self):
+        """
+        Add layouts to the widget.
+        """
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.button)
+    
+    def add_connections(self):
+        """
+        Add signal-slot connections for the widget.
+        """
+        pass
+

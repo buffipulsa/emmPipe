@@ -17,6 +17,9 @@ from emmPipe.rig.component import component
 
 
 class MainUI(DockableUI):
+    """
+    The main user interface class for the emmPipe application.
+    """
 
     WINDOW_TITLE = 'emmPipe'
 
@@ -36,6 +39,9 @@ class MainUI(DockableUI):
         set_stylesheet(self, 'VisualScript')
 
     def add_widgets(self):
+        """
+        Adds the widgets to the main UI.
+        """
 
         self.tab_bar = CustomTabBar(self)
         self.tab_bar.setFixedWidth(self.WINDOW_WIDTH)
@@ -49,18 +55,27 @@ class MainUI(DockableUI):
         self.tab_bar.add_tab(self.rig_widget, 'Rig')
 
     def add_layouts(self):
+        """
+        Adds the layouts to the main UI.
+        """
 
         layout = QVBoxLayout(self)
 
         layout.addWidget(self.tab_bar, alignment=QtCore.Qt.AlignTop)
 
     def add_connections(self):
-        
+        """
+        Adds the connections between widgets and signals.
+        """
+
         self.asset_widget.add_connections()
         self.model_widget.add_connections()
         self.rig_widget.add_connections()
 
     def center_window(self, window):
+        """
+        Centers the given window on the screen.
+        """
 
         frame_geometry = window.frameGeometry()
         center_point = QtCore.QCoreApplication.instance().desktop().availableGeometry().center()
