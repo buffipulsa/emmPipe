@@ -26,8 +26,7 @@ class RigWidget(QtWidgets.QWidget):
             main_layout.addWidget(self.button)
         
         def add_connections(self):
-            
-            self.button.clicked.connect(self.print_component_path)
+            pass
 
         def print_component_path(self):
             print(self.c_data.component_path)
