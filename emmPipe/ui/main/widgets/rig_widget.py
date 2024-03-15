@@ -5,15 +5,16 @@ from PySide2.QtWidgets import QVBoxLayout
 
 class RigWidget(QtWidgets.QWidget):
     
-        def __init__(self, c_data, parent=None):
+        def __init__(self, c_data, c_component, parent=None):
             super().__init__(parent)
     
             self.c_data = c_data
+            self.c_component = c_component
 
             self.add_widgets()
             self.add_layouts()
 
-            self.update_build_script_path()
+            #self.update_build_script_path()
         
         def add_widgets(self):
             
@@ -25,7 +26,8 @@ class RigWidget(QtWidgets.QWidget):
             main_layout.addWidget(self.button)
         
         def add_connections(self):
-            self.button.clicked.connect(self.c_data.print_build_script_path)
+            
+            self.button.clicked.connect(self.print_component_path)
 
-        def update_build_script_path(self):
-            self.c_data.build_scripts_path = os.path.join(self.c_data.asset, 'python', 'rigBuild', 'build.py')
+        def print_component_path(self):
+            print(self.c_data.component_path)

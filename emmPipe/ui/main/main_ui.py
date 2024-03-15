@@ -7,7 +7,7 @@ from PySide2.QtWidgets import QTabWidget, QTabBar
 
 
 from emmPipe.ui.utils import DockableUI, set_stylesheet
-from emmPipe.ui.ui_controller import UIController, UIPathModel
+from emmPipe.ui.ui_path_model import UIPathModel
 
 from .widgets.asset_widget import AssetWidget
 from .widgets.model_widget import ModelWidget
@@ -24,9 +24,14 @@ class MainUI(DockableUI):
     WINDOW_HEIGHT = 600
 
     def __init__(self):
-        self.c_ui_controller = UIController()
-        self.c_path_model = UIPathModel()
         super().__init__()
+
+        self.c_data = UIPathModel()
+        self.c_component = component.Component(self.c_data.component_path)
+
+        self.add_widgets()
+        self.add_layouts()
+        self.add_connections()
 
         set_stylesheet(self, 'VisualScript')
 
@@ -35,9 +40,9 @@ class MainUI(DockableUI):
         self.tab_bar = CustomTabBar(self)
         self.tab_bar.setFixedWidth(self.WINDOW_WIDTH)
 
-        self.asset_widget = AssetWidget(self.c_ui_controller, self.c_path_model, self)
-        self.model_widget = ModelWidget(self.c_ui_controller, self)
-        self.rig_widget = RigWidget(self.c_ui_controller, self)
+        self.asset_widget = AssetWidget(self.c_data, self.c_component, self)
+        self.model_widget = ModelWidget(self.c_data, self.c_component, self)
+        self.rig_widget = RigWidget(self.c_data, self.c_component, self)
 
         self.tab_bar.add_tab(self.asset_widget, 'Asset')
         self.tab_bar.add_tab(self.model_widget, 'Model')

@@ -104,25 +104,17 @@ class DockableUI(QtWidgets.QWidget):
 
         self.setObjectName(self.__class__.__name__)
 
-        self.add_actions()
-        self.add_widgets()
-        self.add_layout()
-        self.add_connections()
-
         self.create_workspace_control()
 
-    def add_actions(self):
-        pass
-
     def add_widgets(self):
-        pass
+        raise NotImplementedError('Subclasses must implement the add_widgets method.')
 
-    def add_layout(self):
-        pass
+    def add_layouts(self):
+        raise NotImplementedError('Subclasses must implement the add_layout method.')
 
     def add_connections(self):
-        pass
-
+        raise NotImplementedError('Subclasses must implement the add_connections method.')
+    
     def create_workspace_control(self):
         self.workspace_control = WorkspaceControl(self.get_workspace_control_name())
         if self.workspace_control.exists():
