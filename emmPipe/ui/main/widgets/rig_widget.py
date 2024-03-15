@@ -32,7 +32,6 @@ class RigWidget(QtWidgets.QWidget):
             main_layout.addWidget(self.button)
         
         def add_connections(self):
-            self.button.clicked.connect(self.c_data.print_build_script_path)
 
             self.osseous_button.clicked.connect(self.show_osseous_ui)
 
