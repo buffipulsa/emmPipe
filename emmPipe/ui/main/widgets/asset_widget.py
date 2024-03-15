@@ -2,26 +2,27 @@ import os
 
 from PySide2 import QtCore
 from PySide2 import QtWidgets
-from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QStackedWidget
+from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QStackedWidget, QFileSystemModel
 from PySide2.QtWidgets import QTabWidget, QTabBar
+from PySide2.QtCore import QStringListModel, QModelIndex
 
 from emmPipe.ui.utils import InfoButtonWidget
 from emmPipe.rig.component.component import Component
+from emmPipe.ui.ui_path_model import UIPathModel
 
 class AssetWidget(QtWidgets.QWidget):
 
-        def __init__(self, c_data, parent=None):
+        def __init__(self, c_data, c_component, parent=None):
             super().__init__(parent)
 
             self.c_data = c_data
+            self.c_component = c_component
 
             self.add_widgets()
             self.add_layouts()
 
-            self.c_data.show = self.show_cbox.currentText()
-            self.c_data.asset = self.asset_cbox.currentText()
-
-            self.c_components = Component(self.c_data.component_path)
+            self.show_cbox.setCurrentText('common')
+            self.on_show_changed(0)
 
         def add_widgets(self):
             
@@ -36,12 +37,12 @@ class AssetWidget(QtWidgets.QWidget):
             self.show_cbox = QtWidgets.QComboBox()
             self.asset_cbox = QtWidgets.QComboBox()
 
-            self.show_cbox.addItems(self.get_projects())
-            self.asset_cbox.addItems(self.get_assets())
+            self.c_show_model = UIPathModel(os.environ['EMMPIPE_PROJECTS_PATH'])
 
-            self.show_cbox.setCurrentText('common')
-            self.update_assets_cbox()
-            self.asset_cbox.setCurrentText('chrBaseMale')
+            self.show_cbox.setModel(self.c_show_model)
+            self.asset_cbox.setModel(self.c_data)
+
+            self.show_cbox.setCurrentText('Select Show')
 
             self.browse_components_button = QtWidgets.QPushButton('Browse Components')
 
@@ -70,40 +71,14 @@ class AssetWidget(QtWidgets.QWidget):
         
         def add_connections(self):
             
-            self.show_cbox.currentIndexChanged.connect(self.update_assets_cbox)
-            self.show_cbox.currentIndexChanged.connect(lambda _: setattr(self.c_data, 'show', self.show_cbox.currentText()))
-            self.asset_cbox.currentIndexChanged.connect(lambda _: setattr(self.c_data, 'asset', self.asset_cbox.currentText()))
+            self.show_cbox.currentIndexChanged.connect(self.on_show_changed)
 
-            self.browse_components_button.clicked.connect(self.update_selection)
-            self.browse_components_button.clicked.connect(lambda _: setattr(self.c_components, 'project_path', self.c_data.component_path))
-            self.browse_components_button.clicked.connect(self.c_components.browse_all_components)
-
-        def get_projects(self):
-            """
-            Get the projects from the specified path.
-
-            Returns:
-                list: The projects.
-            """
-            return os.listdir(self.c_data.projects_path)
+            self.browse_components_button.clicked.connect(self.browse_components)
         
-        def get_assets(self):
-            """
-            Get the assets from the specified path.
-
-            Returns:
-                list: The assets.
-            """
-            return os.listdir(os.path.join(self.c_data.projects_path, self.show_cbox.currentText()))
+        def on_show_changed(self, index):
+            self.c_data.path = os.path.join(self.c_show_model.path, self.show_cbox.currentText())
+            self.c_data.component_path = os.path.join(self.c_data.path, self.asset_cbox.currentText())
         
-        def update_assets_cbox(self):
-            self.asset_cbox.clear()
-            self.asset_cbox.addItems(self.get_assets())
-
-        def update_selection(self):
-            self.c_data.show = self.show_cbox.currentText()
-            self.c_data.asset = self.asset_cbox.currentText()
-            print('Show:', self.c_data.show, 'Asset:', self.c_data.asset)
-        
-        
-        
+        def browse_components(self):
+            self.c_component.project_path = self.c_data.component_path
+            self.c_component.browse_all_components()

@@ -1,9 +1,43 @@
 import os
 
-from PySide2.QtCore import QObject
+from PySide2.QtWidgets import QFileSystemModel
+from PySide2.QtCore import QObject, QStringListModel
 
 from emmPipe.rig.component.component import Component
 
+
+class UIPathModel(QStringListModel):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self._projects_path = os.environ['EMMPIPE_PROJECTS_PATH']
+
+        self.setStringList(self.get_projects())
+
+        self.assets = self.get_assets()
+
+    def get_projects(self):
+            """
+            Get the projects from the specified path.
+
+            Returns:
+                list: The projects.
+            """
+            return os.listdir(self._projects_path)
+        
+    def get_assets(self):
+        """
+        Get the assets from the specified path.
+
+        Returns:
+            list: The assets.
+        """
+        return os.listdir(os.path.join(self._projects_path, self.data(self.index(0, 0))))
+    
+    @property
+    def root_index(self):
+        return self._root_index
 
 class UIController(QObject):
     
