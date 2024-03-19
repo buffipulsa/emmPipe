@@ -1,4 +1,4 @@
-import pymel.core as pm
+
 import maya.cmds as cmds
 
 def shapes(shape):
@@ -24,14 +24,34 @@ def shapes(shape):
         ctrl = arrowSquare()
     elif shape == 'diamondCross':
         ctrl = diamondCross()
+    elif shape == 'triangle':
+        ctrl = triangle()
     else:
         raise ValueError('Please pick a control shape')
     
-    shape = ctrl.getShapes()
+    shape = cmds.listRelatives(ctrl, shapes=True)
 
     cmds.parent(ctrl, osGrp)
 
     return osGrp, ctrl, shape
+
+def create_shape(positions):
+
+    temp_transforms = []
+
+    for pos in positions:
+        crv = cmds.curve(d=1, p=pos)
+
+        temp_transforms.append(crv)
+
+    crv_transform = cmds.group(name='nurbsCircle1', empty=True)
+    for temp_transform in temp_transforms:
+        shape = cmds.listRelatives(temp_transform, shapes=True)
+        cmds.parent(shape, crv_transform, r=True, shape=True)
+
+    cmds.delete(temp_transforms)
+
+    return crv_transform
 
 def circle(curveScale=1.0):
     """ circle shape """
@@ -53,9 +73,7 @@ def square(curveScale=1.0):
     pos.append((1.000000, 0.000000, 1.000000))
     pos.append((-1.000000, 0.000000, 1.000000))
 
-    crv = cmds.curve(d=1, p=pos)
-
-    return crv
+    return create_shape([pos])
 
 def arrowSquare():
     """ arrow-square shape """
@@ -68,9 +86,7 @@ def arrowSquare():
     pos.append( ( -0.510003, 0.000000, -0.382900 ) )
     pos.append( ( 0.510003, 0.000000, -0.382900 ) )
 
-    crv = cmds.curve(d=1, p=pos)
-
-    return crv
+    return create_shape([pos])
 
 def arrowSquareY():
     """ arrow-square shape """
@@ -83,9 +99,7 @@ def arrowSquareY():
     pos.append( ( -0.510003, 0.382900, 0.000000 ) )
     pos.append( ( 0.510003, 0.382900, 0.000000 ) )
 
-    crv = cmds.curve(d=1, p=pos)
-
-    return crv
+    return create_shape([pos])
 
 def box():
     """ box shape """
@@ -109,9 +123,7 @@ def box():
     pos.append( ( -0.500000, 0.499745, 0.500000 ) )
     pos.append( ( -0.500000, 0.499745, -0.500000 ) )
 
-    crv = cmds.curve(d=1, p=pos)
-
-    return crv
+    return create_shape([pos])
 
 def square():
     """ square shape """
@@ -123,9 +135,7 @@ def square():
     pos.append( ( 1.000000, 0.000000, 1.000000 ) )
     pos.append( ( -1.000000, 0.000000, 1.000000 ) )
 
-    crv = cmds.curve(d=1, p=pos)
-
-    return crv
+    return create_shape([pos])
 
 def triangle():
     """ triangle shape """
@@ -136,9 +146,7 @@ def triangle():
     pos.append( ( 0.500000, 0.000000, -0.500000 ) )
     pos.append( ( -0.500000, 0.000000, -0.500000 ) )
 
-    crv = cmds.curve(d=1, p=pos)
-
-    return crv
+    return create_shape([pos])
 
 def cone():
     """ cone shape """
@@ -162,9 +170,11 @@ def cone():
     pos.append( ( 0.500000, 0.000000, 0.000000 ) )
     pos.append( ( 0.250000, 0.000000, 0.433013 ) )
 
-    crv = cmds.curve(d=1, p=pos)
+    # crv = cmds.curve(d=1, p=pos)
 
-    return crv
+    # return crv
+
+    return create_shape([pos])
 
 def orb():
     """ orb shape """
@@ -203,20 +213,7 @@ def orb():
     pos3.append( ( 0.000000, -0.554097, 0.000000 ) )
     pos3.append( ( 0.000000, -0.391806, -0.391806 ) )
 
-    a = []
-
-    for p in [pos, pos2, pos3]:
-        crv = cmds.curve(d=1, p=p)
-        a.append(crv)
-
-    crv_transform = cmds.group(name='nurbsCircle1', empty=True)
-    for i in a:
-        cmds.parent(i, crv_transform)
-
-    cmds.delete(a)
-
-    return crv_transform
-
+    return create_shape([pos, pos2, pos3])
 
 def diamond():
     """ diamond shape """
@@ -238,9 +235,7 @@ def diamond():
     pos.append((0.000000, 0.000000, -1.000000))
     pos.append((-1.000000, 0.000000, 0.000000))
 
-    crv = cmds.curve(d=1, p=pos)
-
-    return crv
+    return create_shape([pos])
 
 def diamondCross():
     """ diamondCross shape """
@@ -273,9 +268,7 @@ def diamondCross():
     pos.append( ( -0.496386, 0.000000, 0.000000 ) )
     pos.append( ( 0.000000, 0.000000, 0.000000 ) )
 
-    crv = cmds.curve(d=1, p=pos)
-
-    return crv
+    return create_shape([pos])
 
 def COG():
     """ COG shape """
@@ -299,7 +292,20 @@ def COG():
     pos.append( ( 0.134942, 0.000000, 0.269883 ) )
     pos.append( ( 0.134942, 0.000000, 0.404825 ) )
     pos.append( ( 0.269883, 0.000000, 0.404825 ) )
+    pos.append( ( 0.000000, 0.000000, 0.674708 ) )
+    pos.append( ( -0.269883, 0.000000, 0.404825 ) )
+    pos.append( ( -0.134942, 0.000000, 0.404825 ) )
+    pos.append( ( -0.134942, 0.000000, 0.269883 ) )
+    pos.append( ( -0.269883, 0.000000, 0.134942 ) )
+    pos.append( ( -0.404825, 0.000000, 0.134942 ) )
+    pos.append( ( -0.404825, 0.000000, 0.269883 ) )
+    pos.append( ( -0.674708, 0.000000, 0.000000 ) )
+    pos.append( ( -0.404825, 0.000000, -0.269883 ) )
+    pos.append( ( -0.404825, 0.000000, -0.134942 ) )
+    pos.append( ( -0.269883, 0.000000, -0.134942 ) )
+    pos.append( ( -0.134942, 0.000000, -0.269883 ) )
 
+    return create_shape([pos])
 
 def printCvPositions(curve):
     """ print curve CVs positions for control function """

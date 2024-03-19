@@ -60,7 +60,16 @@ class Joints:
         """
         for i in range(self.num_joints):
             self.joints.append(cmds.createNode('joint',
-                                name=f'{self._side.lower()}_{self.name.lower()}_{str(i).zfill(2)}'))
+                                name=f'{self.name.lower()}_{self.side.lower()}_{str(i).zfill(2)}'))
+        print(self.joints)
+        self._mark_as_joint(self.joints)
+
         for i in range(len(self.joints) - 1):
             cmds.parent(self.joints[i + 1], self.joints[i])
         return self._joints
+    
+    def _mark_as_joint(self, joints):
+
+        for joint in joints:
+            cmds.addAttr(joint, longName="isJoint", attributeType="bool", defaultValue=True)
+            cmds.setAttr(f'{joint}.isJoint', lock=True, keyable=False)

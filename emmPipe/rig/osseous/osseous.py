@@ -2,6 +2,8 @@
 import maya.cmds as cmds
 
 from ..joints.joints import Joints
+from ..controls.control import Control
+from ..objects import object_utils
 
 class Osseous:
 
@@ -41,7 +43,7 @@ class Osseous:
         self.parent_joints()
         self.space_joints()
         
-
+        self.create_controls()
 
         self.create_osseous_attributes()
         self.set_osseous_attributes()
@@ -120,7 +122,6 @@ class Osseous:
             cmds.setAttr(f'{joint}.translateX', 5)
 
         if self._side.lower() == 'l':
-            #cmds.setAttr(f'{self.first_joint}.translateX', 2)
             cmds.xform(self.first_joint, ws=True, 
                        translation=(self.parent_pos[0]+2, 
                        self.parent_pos[1], 
@@ -131,7 +132,6 @@ class Osseous:
                        self.parent_pos[1], 
                        self.parent_pos[2]))
             cmds.setAttr(f'{self.first_joint}.rotateY', 180)
-            #cmds.setAttr(f'{first_joint}.rotateZ', 180)
         elif self._side.lower() == 'c':
             cmds.xform(self.first_joint, ws=True, 
                        translation=(self.parent_pos[0], 
@@ -141,19 +141,27 @@ class Osseous:
 
         return
     
+    def create_controls(self):
+
+        for i in range(self.joints_num):
+            ctrl = Control(self.side, self.name, scale=50, shape='circle')
+    
     def create_osseous_attributes(self):
 
-        cmds.addAttr(self.first_joint, longName="isOsseuos", attributeType="bool", defaultValue=True)
-        cmds.setAttr(f'{self.first_joint}.isOsseuos', lock=True, keyable=False)
+        node = object_utils.find_node_by_type(self.first_joint, 'joint')    
+
+        cmds.addAttr(node, longName="isOsseuos", attributeType="bool", defaultValue=True)
+        cmds.setAttr(f'{node}.isOsseuos', lock=True, keyable=False)
 
         attrs = [f'oss{attr.capitalize()}' for attr in ['side', 'name']] 
         for attr in attrs:
-            cmds.addAttr(self.first_joint, longName=attr, dataType='string')
+            cmds.addAttr(node, longName=attr, dataType='string')
 
     def set_osseous_attributes(self):
 
-        cmds.setAttr(f'{self.first_joint}.ossSide', self._side, type='string')
-        cmds.setAttr(f'{self.first_joint}.ossName', self._name, type='string')
+        node = object_utils.find_node_by_type(self.first_joint, 'joint')
+        cmds.setAttr(f'{node}.ossSide', self._side, type='string')
+        cmds.setAttr(f'{node}.ossName', self._name, type='string')
 
         return
 

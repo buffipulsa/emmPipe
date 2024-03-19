@@ -2,7 +2,117 @@
 import maya.cmds as cmds
 
 from . import control_shapes
+from ..objects import object_utils
 
+
+class Control:
+
+    def __init__(self, side, name, shape, scale) -> None:
+        
+        self._side = side
+        self._name = name
+        self._shape = shape
+        self._scale = scale
+
+        self.ctrl_name  = None
+        self.index = 0
+
+        self._create()
+
+    def _create(self):
+        
+        self.os_grp, self.ctrl, self.shapes = control_shapes.shapes(self._shape)
+
+        self._mark_as_control()
+        self._mark_side()
+        self._mark_part()
+        self._mark_control_index()
+        
+        self._rename()
+
+        # self.rename(self.name)
+        # self.thickness(1)
+        # self.color('yellow')
+        # self.lock_visibility(True)
+        # self.scale_ctrl(self.scale)
+        # self.lock_transforms('scale')
+
+    def _mark_as_control(self):
+
+        cmds.addAttr(self.ctrl, longName="isControl", attributeType="bool", defaultValue=True)
+        cmds.setAttr(f'{self.ctrl}.isControl', lock=True, keyable=False)
+    
+    def _mark_side(self):
+            
+        cmds.addAttr(self.ctrl, longName='controlSide', dataType='string')
+        cmds.setAttr(f'{self.ctrl}.controlSide', self._side, type='string')
+
+    def _mark_part(self):
+            
+        cmds.addAttr(self.ctrl, longName='controlPart', dataType='string')
+        cmds.setAttr(f'{self.ctrl}.controlPart', self._name, type='string')
+
+    def _mark_control_index(self):
+        
+        cmds.addAttr(self.ctrl, longName='controlIndex', attributeType='long')
+
+        ctrls_in_scene = object_utils.find_nodes_with_attr('isControl')
+
+        indexes = [int(cmds.getAttr(f'{ctrl}.controlIndex')) for ctrl in ctrls_in_scene \
+                   if cmds.getAttr(f'{ctrl}.controlPart') == self._name \
+                    and cmds.getAttr(f'{ctrl}.controlSide') == self._side]
+
+        cmds.setAttr(f'{self.ctrl}.controlIndex', max(indexes)+1)
+        self.index = max(indexes)+1
+
+    def _rename(self):
+
+        ctrl_path = object_utils.find_node_with_attr(self.ctrl, 'isControl')
+
+        self.os_grp = cmds.rename(self.os_grp, f'{self._name}_{self._side}_{str(self.index).zfill(2)}_offset')
+        self.ctrl_name = cmds.rename(ctrl_path.split('|')[-1], f'{self._name}_{self._side}_{str(self.index).zfill(2)}')
+
+        for shape in cmds.listRelatives(self.ctrl_name, shapes=True):
+            cmds.rename(shape, f'{self.ctrl_name.split("|")[-1]}_Shape')
+
+    def match_transforms(self, obj=None, coords=None, pos=True, rot=True, scale=False):
+        """ This method matches controller translation and rotation to desired object.
+        Args:
+            obj (str): Object to match translates and rotates to.
+        """
+        if not coords and obj:
+            if cmds.objExists(obj):
+                cmds.matchTransform(self.os_grp,
+                                  obj,
+                                  position=pos,
+                                  rotation=rot,
+                                  scale=scale)
+            else:
+                raise ValueError('This object does not exists. Please specify an object to match transforms')
+
+        if coords and not obj:
+            cmds.xform(self.os_grp, translation=coords, worldSpace=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
 class Ctrl:
     """ This class creates and manipulates an animation control and its structure """
 
@@ -20,8 +130,6 @@ class Ctrl:
         self.extraGrps = []
         self.originOffset = None
         self.originCtrl = None
-
-        #self.cTools = tools.Tools()
 
         # ---  CREATE CONTROL
         self._create(shape)
@@ -118,8 +226,9 @@ class Ctrl:
         cmds.rename(self.os_grp, prefix.replace('ctrl', 'offset'))
         ctrl_name = cmds.rename(self.ctrl, prefix)
 
-        for i, shape in enumerate(self.shapes):
-            cmds.rename(shape, '{}Shape{}'.format(ctrl_name, (i+1)))
+        # for i, shape in enumerate(self.shapes):
+        #     print(shape)
+        #     cmds.rename(shape, '{}Shape{}'.format(ctrl_name, (i+1)))
 
     def thickness(self, value):
         """ This method sets the curve thickness value.
@@ -127,7 +236,7 @@ class Ctrl:
             value (int): New desired control thickness value.
         """
         for shape in self.shapes:
-            shape.lineWidth.set(value)
+            cmds.setAttr(f'{shape}.lineWidth', value)
 
     def color(self, color):
         """ This method sets the control shape color.
@@ -333,4 +442,4 @@ class Ctrl:
         self.ctrl.translate.connect(self.originCtrl.translate)
         self.ctrl.rotate.connect(self.originCtrl.rotate)
         self.ctrl.scale.connect(self.originCtrl.scale)
-
+'''
