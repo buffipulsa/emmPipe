@@ -17,10 +17,11 @@ class Control:
         self.ctrl_name  = None
         self.index = 0
 
-        self._create()
+        self._thickness = 1
+        self._color = 'yellow'
 
-    def _create(self):
-        
+    def create(self):
+
         self.os_grp, self.ctrl, self.shapes = control_shapes.shapes(self._shape)
 
         self._mark_as_control()
@@ -30,12 +31,71 @@ class Control:
         
         self._rename()
 
-        # self.rename(self.name)
-        # self.thickness(1)
-        # self.color('yellow')
+        if self._side   == 'l': self.color = 'blue'
+        elif self._side == 'r': self.color = 'red'
+        else:                   self.color = 'yellow'
+        self.thickness = self._thickness
+
         # self.lock_visibility(True)
         # self.scale_ctrl(self.scale)
         # self.lock_transforms('scale')
+
+        return self
+
+    def match_transforms(self, obj=None, objType=None, coords=None, pos=True, rot=True, scale=False):
+        """ This method matches controller translation and rotation to desired object.
+        Args:
+            obj (str): Object to match translates and rotates to.
+        """
+        obj = object_utils.node_with_attr(obj, objType)
+        if not coords and obj:
+            if cmds.objExists(obj):
+                cmds.matchTransform(self.os_grp,
+                                  obj,
+                                  position=pos,
+                                  rotation=rot,
+                                  scale=scale)
+            else:
+                raise ValueError('This object does not exists. Please specify an object to match transforms')
+
+        if coords and not obj:
+            cmds.xform(self.os_grp, translation=coords, worldSpace=True)
+        
+        return 
+    
+    @property
+    def color(self):
+        return self._color
+    
+    @color.setter
+    def color(self, value):
+        color_data = {'red': 13,
+                      'blue': 6,
+                      'yellow': 17}
+
+        # ---  Check if color is valid
+        if value in color_data:
+            color = color_data[value]
+
+            for shape in self.shapes:
+                #if not shape.overrideEnabled.get():
+                if not cmds.getAttr(f'{shape}.overrideEnabled'):
+                    cmds.setAttr(f'{shape}.overrideEnabled', 1)
+                cmds.setAttr(f'{shape}.overrideColor', color)
+        else:
+            raise ValueError('Please provide a valid color name')
+            
+        self._color = value
+
+    @property
+    def thickness(self):
+        return self._thickness
+    
+    @thickness.setter
+    def thickness(self, value):
+        for shape in self.shapes:
+            cmds.setAttr(f'{shape}.lineWidth', value)
+
 
     def _mark_as_control(self):
 
@@ -56,7 +116,7 @@ class Control:
         
         cmds.addAttr(self.ctrl, longName='controlIndex', attributeType='long')
 
-        ctrls_in_scene = object_utils.find_nodes_with_attr('isControl')
+        ctrls_in_scene = object_utils.nodes_with_attr('isControl')
 
         indexes = [int(cmds.getAttr(f'{ctrl}.controlIndex')) for ctrl in ctrls_in_scene \
                    if cmds.getAttr(f'{ctrl}.controlPart') == self._name \
@@ -67,31 +127,14 @@ class Control:
 
     def _rename(self):
 
-        ctrl_path = object_utils.find_node_with_attr(self.ctrl, 'isControl')
+        ctrl_path = object_utils.node_with_attr(self.ctrl, 'isControl')
 
         self.os_grp = cmds.rename(self.os_grp, f'{self._name}_{self._side}_{str(self.index).zfill(2)}_offset')
-        self.ctrl_name = cmds.rename(ctrl_path.split('|')[-1], f'{self._name}_{self._side}_{str(self.index).zfill(2)}')
+        self.ctrl = cmds.rename(ctrl_path.split('|')[-1], f'{self._name}_{self._side}_{str(self.index).zfill(2)}')
 
-        for shape in cmds.listRelatives(self.ctrl_name, shapes=True):
-            cmds.rename(shape, f'{self.ctrl_name.split("|")[-1]}_Shape')
-
-    def match_transforms(self, obj=None, coords=None, pos=True, rot=True, scale=False):
-        """ This method matches controller translation and rotation to desired object.
-        Args:
-            obj (str): Object to match translates and rotates to.
-        """
-        if not coords and obj:
-            if cmds.objExists(obj):
-                cmds.matchTransform(self.os_grp,
-                                  obj,
-                                  position=pos,
-                                  rotation=rot,
-                                  scale=scale)
-            else:
-                raise ValueError('This object does not exists. Please specify an object to match transforms')
-
-        if coords and not obj:
-            cmds.xform(self.os_grp, translation=coords, worldSpace=True)
+        for i, shape in enumerate(self.shapes):
+            shape_name = cmds.rename(shape, f'{self._name}_{self._side}_{str(self.index).zfill(2)}_Shape')
+            self.shapes[i] = shape_name
 
 
 

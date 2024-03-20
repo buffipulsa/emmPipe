@@ -1,6 +1,8 @@
 
 import maya.cmds as cmds
 
+from ..objects import object_utils
+
 class Joints:
     """
     Represents a joint chain in the scene.
@@ -54,22 +56,32 @@ class Joints:
         """
         return self._joints
 
-    def create_joints(self):
+    def create(self):
         """
         Create the joints.
         """
         for i in range(self.num_joints):
-            self.joints.append(cmds.createNode('joint',
+            self._joints.append(cmds.createNode('joint',
                                 name=f'{self.name.lower()}_{self.side.lower()}_{str(i).zfill(2)}'))
-        print(self.joints)
-        self._mark_as_joint(self.joints)
 
-        for i in range(len(self.joints) - 1):
-            cmds.parent(self.joints[i + 1], self.joints[i])
-        return self._joints
+        self._mark_as_joint(self._joints)
+        self._mark_joint_index(self._joints)
+
+        for i in range(len(self._joints) - 1):
+            cmds.parent(self._joints[i + 1], self._joints[i])
+        
+        return self
     
     def _mark_as_joint(self, joints):
 
         for joint in joints:
             cmds.addAttr(joint, longName="isJoint", attributeType="bool", defaultValue=True)
             cmds.setAttr(f'{joint}.isJoint', lock=True, keyable=False)
+    
+    def _mark_joint_index(self, joints):
+        
+        for i, joint in enumerate(joints):
+            joint = object_utils.node_with_attr(joint, 'isJoint')
+
+            cmds.addAttr(joint, longName='jointIndex', attributeType='long')
+            cmds.setAttr(f'{joint}.jointIndex', i)
