@@ -28,6 +28,8 @@ class Joints:
         self._num_joints = num_joints
         self._joints = []
 
+        self._radius = 1.0
+
     @property
     def side(self):
         """
@@ -55,6 +57,24 @@ class Joints:
         list: The joint chain.
         """
         return self._joints
+    
+    @property
+    def radius(self):
+        """
+        float: The radius of the joints.
+        """
+        return self._radius
+
+    @radius.setter
+    def radius(self, value):
+        """
+        Set the radius of the joints.
+
+        Args:
+            value (float): The radius of the joints.
+        """
+        [cmds.setAttr(f'{joint}.radius', value) for joint in self._joints if len(self._joints) > 0]
+        self._radius = value
 
     def create(self):
         """

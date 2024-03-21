@@ -14,7 +14,7 @@ class Control:
         self._shape = shape
         self._scale = scale
 
-        self.ctrl_name  = None
+        self._ctrl_name  = None
         self.index = 0
 
         self._thickness = 1
@@ -127,9 +127,21 @@ class Control:
     
         self.os_grp = cmds.rename(self.os_grp, f'{self._name}_{self._side}_{str(self.index).zfill(2)}_offset')
         self.ctrl = cmds.rename(ou.node_with_attr(self.ctrl, 'isControl'), f'{self._name}_{self._side}_{str(self.index).zfill(2)}')
-
         self.shapes = [cmds.rename(shape, f'{self._name}_{self._side}_{str(self.index).zfill(2)}_Shape') for shape in self.shapes]
-        
+
+    def extra_groups(self, *args):
+
+        groups_data = {}
+        self.extra_groups = []
+        for arg in args:
+            grp = cmds.group(self.ctrl, name=self.ctrl.replace('ctrl_', '{}_'.format(arg)))
+
+            groups_data['{}Grp'.format(arg.lower())] = grp
+
+            self.extra_groups.append(grp)
+
+        return groups_data
+           
 
 
 
