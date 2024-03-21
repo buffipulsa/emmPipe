@@ -2,7 +2,7 @@
 import maya.cmds as cmds
 
 from . import control_shapes
-from ..objects import object_utils
+from ..objects import object_utils as ou
 
 
 class Control:
@@ -47,7 +47,7 @@ class Control:
         Args:
             obj (str): Object to match translates and rotates to.
         """
-        obj = object_utils.node_with_attr(obj, objType)
+        obj = ou.node_with_attr(obj, objType)
         if not coords and obj:
             if cmds.objExists(obj):
                 cmds.matchTransform(self.os_grp,
@@ -78,9 +78,8 @@ class Control:
             color = color_data[value]
 
             for shape in self.shapes:
-                #if not shape.overrideEnabled.get():
-                if not cmds.getAttr(f'{shape}.overrideEnabled'):
-                    cmds.setAttr(f'{shape}.overrideEnabled', 1)
+                [cmds.setAttr(f'{shape}.overrideEnabled', 1) \
+                 for shape in self.shapes if not cmds.getAttr(f'{shape}.overrideEnabled')]
                 cmds.setAttr(f'{shape}.overrideColor', color)
         else:
             raise ValueError('Please provide a valid color name')
@@ -93,9 +92,7 @@ class Control:
     
     @thickness.setter
     def thickness(self, value):
-        for shape in self.shapes:
-            cmds.setAttr(f'{shape}.lineWidth', value)
-
+        [cmds.setAttr(f'{shape}.lineWidth', value) for shape in self.shapes]
 
     def _mark_as_control(self):
 
@@ -116,25 +113,23 @@ class Control:
         
         cmds.addAttr(self.ctrl, longName='controlIndex', attributeType='long')
 
-        ctrls_in_scene = object_utils.nodes_with_attr('isControl')
+        ctrls_in_scene = ou.nodes_with_attr('isControl')
 
         indexes = [int(cmds.getAttr(f'{ctrl}.controlIndex')) for ctrl in ctrls_in_scene \
                    if cmds.getAttr(f'{ctrl}.controlPart') == self._name \
                     and cmds.getAttr(f'{ctrl}.controlSide') == self._side]
-
-        cmds.setAttr(f'{self.ctrl}.controlIndex', max(indexes)+1)
-        self.index = max(indexes)+1
+        
+        if len(indexes) > 1:
+            self.index = max(indexes) + 1
+            cmds.setAttr(f'{self.ctrl}.controlIndex', self.index)
 
     def _rename(self):
-
-        ctrl_path = object_utils.node_with_attr(self.ctrl, 'isControl')
-
+    
         self.os_grp = cmds.rename(self.os_grp, f'{self._name}_{self._side}_{str(self.index).zfill(2)}_offset')
-        self.ctrl = cmds.rename(ctrl_path.split('|')[-1], f'{self._name}_{self._side}_{str(self.index).zfill(2)}')
+        self.ctrl = cmds.rename(ou.node_with_attr(self.ctrl, 'isControl'), f'{self._name}_{self._side}_{str(self.index).zfill(2)}')
 
-        for i, shape in enumerate(self.shapes):
-            shape_name = cmds.rename(shape, f'{self._name}_{self._side}_{str(self.index).zfill(2)}_Shape')
-            self.shapes[i] = shape_name
+        self.shapes = [cmds.rename(shape, f'{self._name}_{self._side}_{str(self.index).zfill(2)}_Shape') for shape in self.shapes]
+        
 
 
 

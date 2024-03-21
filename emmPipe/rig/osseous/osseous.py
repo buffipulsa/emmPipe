@@ -63,6 +63,7 @@ class Osseous:
         self._create_module_structure()
 
         self._create_root_joint()
+        self._create_root_control()
         self._create_joints()
         self._parent_joints()
         self._space_joints()
@@ -117,18 +118,18 @@ class Osseous:
         """
         Creates the module structure for the osseous rig.
         """
-        top_grp = 'OSSEOUS'
+        self.top_grp = 'OSSEOUS'
         self.joints_grp = 'joints'
-        if not cmds.objExists(top_grp):
-            top_grp = cmds.createNode('transform', name=top_grp)
+        if not cmds.objExists(self.top_grp):
+            self.top_grp = cmds.createNode('transform', name=self.top_grp)
         if not cmds.objExists(self.joints_grp):
             self.joints_grp = cmds.createNode('transform', name=self.joints_grp)
-            cmds.parent(self.joints_grp, top_grp)
+            cmds.parent(self.joints_grp, self.top_grp)
             cmds.setAttr(f'{self.joints_grp}.template', True)
             
 
         self._module_grp = cmds.createNode('transform', name=f'{self._side}_{self._name}_osseous')
-        cmds.parent(self._module_grp, top_grp)
+        cmds.parent(self._module_grp, self.top_grp)
 
         self._ctrls_grp = cmds.createNode('transform', name=f'{self._side}_{self._name}_controls')
         cmds.parent(self._ctrls_grp, self._module_grp)
@@ -145,6 +146,18 @@ class Osseous:
         if not cmds.objExists(self._root_joint):
             self._root_jnt = cmds.createNode('joint', name=self._root_joint)
             cmds.parent(self._root_jnt, self.joints_grp)
+
+        return
+
+    def _create_root_control(self):
+        """
+        Creates the root control for the osseous rig element.
+        """
+
+        if not object_utils.node_with_attr(self._root_joint, 'isControl'):
+            self._root_ctrl = Control('c', 'root', scale=100, shape='COG').create()
+            self._root_ctrl.match_transforms(self._root_joint, 'isJoint')
+            cmds.parent(self._root_ctrl.os_grp, self.top_grp)
 
         return
 
@@ -175,7 +188,7 @@ class Osseous:
             cmds.setAttr(f'{self._joints[0]}.translate', *self.parent_pos)
             cmds.parent(self.first_joint, end_joint)
 
-        jnts_in_grp = cmds.listRelatives(self.joints_grp)
+        jnts_in_grp = object_utils.node_with_attr(cmds.listRelatives(self.joints_grp), 'isJoint')
         if len(jnts_in_grp) == 2:
             cmds.parent(jnts_in_grp[1], jnts_in_grp[0])
 
@@ -185,26 +198,18 @@ class Osseous:
         """
         Adjusts the position and rotation of the joints based on the side attribute.
         """
+        x, y, z = self.parent_pos
+
         if self._side.lower() == 'l':
-            cmds.xform(self.first_joint, ws=True, 
-                       translation=(self.parent_pos[0]+5, 
-                       self.parent_pos[1], 
-                       self.parent_pos[2]))
+            cmds.xform(self.first_joint, ws=True, translation=(x + 5, y, z))
         elif self._side.lower() == 'r':
-            cmds.xform(self.first_joint, ws=True, 
-                       translation=(self.parent_pos[0]-5, 
-                       self.parent_pos[1], 
-                       self.parent_pos[2]))
+            cmds.xform(self.first_joint, ws=True, translation=(x - 5, y, z))
             cmds.setAttr(f'{self.first_joint}.rotateY', 180)
         elif self._side.lower() == 'c':
-            cmds.xform(self.first_joint, ws=True, 
-                       translation=(self.parent_pos[0], 
-                       self.parent_pos[1]+5, 
-                       self.parent_pos[2]))
+            cmds.xform(self.first_joint, ws=True, translation=(x, y + 5, z))
             cmds.setAttr(f'{self.first_joint}.rotateZ', 90)
 
-        for joint in self.c_joints.joints[1:]:
-            cmds.setAttr(f'{joint}.translateX', 5)
+        [cmds.setAttr(f'{joint}.translateX', 5) for joint in self.c_joints.joints[1:]]
 
         return
     

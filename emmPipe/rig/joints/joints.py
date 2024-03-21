@@ -1,7 +1,7 @@
 
 import maya.cmds as cmds
 
-from ..objects import object_utils
+from ..objects import object_utils as ou
 
 class Joints:
     """
@@ -60,15 +60,14 @@ class Joints:
         """
         Create the joints.
         """
-        for i in range(self.num_joints):
-            self._joints.append(cmds.createNode('joint',
-                                name=f'{self.name.lower()}_{self.side.lower()}_{str(i).zfill(2)}'))
+        self._joints = [cmds.createNode('joint', \
+            name=f'{self.name.lower()}_{self.side.lower()}_{str(i).zfill(2)}') \
+            for i in range(self.num_joints)]
 
         self._mark_as_joint(self._joints)
         self._mark_joint_index(self._joints)
 
-        for i in range(len(self._joints) - 1):
-            cmds.parent(self._joints[i + 1], self._joints[i])
+        [cmds.parent(self._joints[i + 1], self._joints[i]) for i in range(len(self._joints) - 1)]
         
         return self
     
@@ -81,7 +80,5 @@ class Joints:
     def _mark_joint_index(self, joints):
         
         for i, joint in enumerate(joints):
-            joint = object_utils.node_with_attr(joint, 'isJoint')
-
-            cmds.addAttr(joint, longName='jointIndex', attributeType='long')
-            cmds.setAttr(f'{joint}.jointIndex', i)
+            cmds.addAttr(ou.node_with_attr(joint, 'isJoint'), longName='jointIndex', attributeType='long')
+            cmds.setAttr(f'{ou.node_with_attr(joint, "isJoint")}.jointIndex', i)
