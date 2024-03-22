@@ -2,6 +2,7 @@ import os
 
 from PySide2 import QtCore
 from PySide2 import QtWidgets
+from PySide2 import QtGui
 from shiboken2 import wrapInstance, getCppPointer
 
 import maya.OpenMayaUI as omui
@@ -153,6 +154,102 @@ class InfoButtonWidget(QtWidgets.QPushButton):
             return self.message
         else:
             raise ValueError('Please provide a message.')
+        
+
+class CollapsibleHeader(QtWidgets.QWidget):
+
+    COLLAPSED_PIXMAD = QtGui.QPixmap(':teRightArrow.png')
+    EXPANDED_PIXMAD = QtGui.QPixmap(':teDownArrow.png')
+
+    LABEL_COLOR = '#565656'
+
+    clicked = QtCore.Signal()
+
+    def __init__(self, title, parent=None):
+        super().__init__(parent)
+
+        self.title = title
+
+        self.add_widgets()
+        self.add_layouts()
+
+        self.set_title(self.title)
+        self.set_expanded(False)
+
+    def add_widgets(self):
+
+        self.icon_label = QtWidgets.QLabel()
+        self.icon_label.setFixedWidth(self.COLLAPSED_PIXMAD.width())
+        self.icon_label.setFixedHeight(self.COLLAPSED_PIXMAD.height())
+        self.icon_label.setStyleSheet(f'background-color: {self.LABEL_COLOR};')
+
+        self.title_label = QtWidgets.QLabel()
+        self.title_label.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
+        self.title_label.setFixedHeight(self.COLLAPSED_PIXMAD.height())
+        self.title_label.setStyleSheet(f'background-color: {self.LABEL_COLOR};')
+
+    
+    def add_layouts(self):
+        main_layout = QtWidgets.QHBoxLayout(self)
+        main_layout.setContentsMargins(4, 4, 4, 4)
+
+        main_layout.addWidget(self.icon_label)
+        main_layout.addWidget(self.title_label)
+
+    def set_title(self, title):
+        self.title_label.setText(f'<b>{title}</b>')
+
+    def is_expanded(self):
+        return self._expanded
+    
+    def set_expanded(self, state):
+        self._expanded = state
+
+        if self._expanded:
+            self.icon_label.setPixmap(self.EXPANDED_PIXMAD)
+        else:
+            self.icon_label.setPixmap(self.COLLAPSED_PIXMAD)
+    
+    def mouseReleaseEvent(self, event):
+        self.clicked.emit()
 
 
+class CollapsibleWidget(QtWidgets.QWidget):
 
+    def __init__(self, title, parent=None):
+        super().__init__(parent)
+
+        self.title = title
+
+        self.add_widgets()
+        self.add_layouts()
+        self.add_connections()
+
+        self.toggle_expanded(False)
+
+    def add_widgets(self):
+
+        self.header_widget = CollapsibleHeader(self.title)
+
+        self.body_widget = QtWidgets.QWidget()
+        self.body_widget.setContentsMargins(4,2,4,2)
+    
+    def add_layouts(self):
+        main_layout = QtWidgets.QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.body_layout = QtWidgets.QVBoxLayout(self.body_widget)
+        main_layout.addLayout(self.body_layout)
+
+        main_layout.addWidget(self.header_widget)
+        main_layout.addWidget(self.body_widget)
+
+    def add_connections(self):
+        self.header_widget.clicked.connect(self.on_header_clicked)
+
+    def toggle_expanded(self, state):
+        self.header_widget.set_expanded(state)
+        self.body_widget.setVisible(state)
+
+    def on_header_clicked(self):
+        self.toggle_expanded(not self.header_widget.is_expanded())

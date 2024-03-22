@@ -6,7 +6,7 @@ from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QStackedWidget
 from PySide2.QtWidgets import QTabWidget, QTabBar
 
 
-from emmPipe.ui.utils import DockableUI, set_stylesheet
+from emmPipe.ui.ui_utils import DockableUI, set_stylesheet
 from emmPipe.ui.ui_path_model import UIPathModel
 
 from .widgets.asset_widget import AssetWidget
