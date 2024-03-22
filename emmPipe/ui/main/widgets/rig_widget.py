@@ -8,15 +8,23 @@ import maya.cmds as cmds
 from emmPipe.ui.main.widgets.osseousWidget import OsseousWidget
 
 class RigWidget(QtWidgets.QWidget):
+    """
+    A widget for handling rig-related functionality.
     
-        def __init__(self, c_data, c_component, parent=None):
-            super().__init__(parent)
+    Args:
+        c_data (CData): The data object.
+        c_component (CComponent): The component object.
+        parent (QWidget, optional): The parent widget. Defaults to None.
+    """
     
-            self.c_data = c_data
-            self.c_component = c_component
+    def __init__(self, c_data, c_component, parent=None):
+        super().__init__(parent)
 
-            self.add_widgets()
-            self.add_layouts()
+        self.c_data = c_data
+        self.c_component = c_component
+
+        self.add_widgets()
+        self.add_layouts()
 
             #self.update_build_script_path()
         
