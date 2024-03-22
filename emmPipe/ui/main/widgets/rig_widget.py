@@ -28,21 +28,21 @@ class RigWidget(QtWidgets.QWidget):
 
             #self.update_build_script_path()
         
-        def add_widgets(self):
-            
-            self.osseous_widget = OsseousWidget()
+    def add_widgets(self):
+        
+        self.osseous_widget = OsseousWidget()
 
-            self.build_button = QtWidgets.QPushButton('Build')
+        self.build_button = QtWidgets.QPushButton('Build')
 
-        def add_layouts(self):
-            main_layout = QVBoxLayout(self)
-            main_layout.setContentsMargins(0, 0, 0, 0)
-            
-            main_layout.addWidget(self.osseous_widget)
-            main_layout.addWidget(self.build_button)
+    def add_layouts(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        
+        main_layout.addWidget(self.osseous_widget)
+        main_layout.addWidget(self.build_button)
 
-        def add_connections(self):
-            pass
+    def add_connections(self):
+        pass
 
-        def update_build_script_path(self):
-            self.c_data.build_scripts_path = os.path.join(self.c_data.asset, 'python', 'rigBuild', 'build.py')
+    def update_build_script_path(self):
+        self.c_data.build_scripts_path = os.path.join(self.c_data.asset, 'python', 'rigBuild', 'build.py')
