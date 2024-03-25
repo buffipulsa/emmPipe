@@ -1,5 +1,6 @@
 import os
 
+from PySide2 import QtCore
 from PySide2 import QtWidgets
 from PySide2.QtWidgets import QVBoxLayout
 
@@ -38,11 +39,11 @@ class ModelWidget(QtWidgets.QWidget):
         """
         Add layouts to the widget.
         """
-        main_layout = QVBoxLayout(self)
+        layout = QVBoxLayout(self, alignment=QtCore.Qt.AlignTop)
 
-        main_layout.addWidget(self.import_button)
-        main_layout.addWidget(self.open_button)
-        main_layout.addWidget(self.reference_button)
+        layout.addWidget(self.import_button)
+        layout.addWidget(self.open_button)
+        layout.addWidget(self.reference_button)
 
     def add_connections(self):
         """

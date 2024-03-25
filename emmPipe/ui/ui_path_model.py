@@ -45,3 +45,5 @@ class UIPathModel(QStringListModel):
         """
         self._component_path = value
 
+
+

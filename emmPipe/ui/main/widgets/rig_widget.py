@@ -1,5 +1,6 @@
 import os
 
+from PySide2 import QtCore
 from PySide2 import QtWidgets
 from PySide2.QtWidgets import QVBoxLayout
 
@@ -25,8 +26,6 @@ class RigWidget(QtWidgets.QWidget):
 
         self.add_widgets()
         self.add_layouts()
-
-            #self.update_build_script_path()
         
     def add_widgets(self):
         
@@ -35,11 +34,12 @@ class RigWidget(QtWidgets.QWidget):
         self.build_button = QtWidgets.QPushButton('Build')
 
     def add_layouts(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(0, 0, 0, 0)
+        layout = QVBoxLayout(self)
+        layout.setAlignment(QtCore.Qt.AlignTop)
+        layout.setContentsMargins(0, 0, 0, 0)
         
-        main_layout.addWidget(self.osseous_widget)
-        main_layout.addWidget(self.build_button)
+        layout.addWidget(self.osseous_widget)
+        layout.addWidget(self.build_button)
 
     def add_connections(self):
         pass

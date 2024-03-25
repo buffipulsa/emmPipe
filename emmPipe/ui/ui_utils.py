@@ -103,6 +103,9 @@ class DockableUI(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
 
+        self.setFixedHeight(self.WINDOW_HEIGHT)
+        self.setFixedWidth(self.WINDOW_WIDTH)
+
         self.setObjectName(self.__class__.__name__)
 
         self.create_workspace_control()
@@ -190,11 +193,11 @@ class CollapsibleHeader(QtWidgets.QWidget):
 
     
     def add_layouts(self):
-        main_layout = QtWidgets.QHBoxLayout(self)
-        main_layout.setContentsMargins(4, 4, 4, 4)
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.setContentsMargins(4, 4, 4, 4)
 
-        main_layout.addWidget(self.icon_label)
-        main_layout.addWidget(self.title_label)
+        layout.addWidget(self.icon_label)
+        layout.addWidget(self.title_label)
 
     def set_title(self, title):
         self.title_label.setText(f'<b>{title}</b>')
@@ -232,24 +235,32 @@ class CollapsibleWidget(QtWidgets.QWidget):
         self.header_widget = CollapsibleHeader(self.title)
 
         self.body_widget = QtWidgets.QWidget()
-        self.body_widget.setContentsMargins(4,2,4,2)
+
+        self.scroll_area = QtWidgets.QScrollArea()
+        self.scroll_area.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.scroll_area.setFixedHeight(250)
+        self.scroll_area.setWidget(self.body_widget)
     
     def add_layouts(self):
-        main_layout = QtWidgets.QVBoxLayout(self)
-        main_layout.setContentsMargins(0, 0, 0, 0)
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
         self.body_layout = QtWidgets.QVBoxLayout(self.body_widget)
-        main_layout.addLayout(self.body_layout)
+        self.body_layout.setAlignment(QtCore.Qt.AlignTop)
 
-        main_layout.addWidget(self.header_widget)
-        main_layout.addWidget(self.body_widget)
+        self.layout.addWidget(self.header_widget)
+        self.layout.addWidget(self.scroll_area)
+
+        self.setLayout(self.layout)
 
     def add_connections(self):
         self.header_widget.clicked.connect(self.on_header_clicked)
 
     def toggle_expanded(self, state):
         self.header_widget.set_expanded(state)
-        self.body_widget.setVisible(state)
+        self.scroll_area.setVisible(state)
 
     def on_header_clicked(self):
         self.toggle_expanded(not self.header_widget.is_expanded())

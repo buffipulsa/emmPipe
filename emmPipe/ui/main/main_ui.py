@@ -24,7 +24,7 @@ class MainUI(DockableUI):
     WINDOW_TITLE = 'emmPipe'
 
     WINDOW_WIDTH = 300
-    WINDOW_HEIGHT = 600
+    WINDOW_HEIGHT = 1000
 
     def __init__(self):
         super().__init__()
@@ -88,6 +88,8 @@ class CustomTabBar(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self.parent = parent
+
         self.add_widgets()
         self.add_layouts()
         self.add_connections()
@@ -96,6 +98,7 @@ class CustomTabBar(QtWidgets.QWidget):
     
         self.tab_bar = QTabBar()
         self.stacked_widget = QStackedWidget()
+        self.stacked_widget.setFixedHeight(self.parent.height())
     
     def add_layouts(self):
         layout = QVBoxLayout(self)
