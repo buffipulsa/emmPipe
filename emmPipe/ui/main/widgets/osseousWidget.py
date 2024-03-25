@@ -3,6 +3,7 @@ import os
 from PySide2 import QtWidgets
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout
 from PySide2 import QtCore
+from PySide2.QtCore import Qt
 
 import maya.cmds as cmds
 
@@ -58,9 +59,9 @@ class OsseousWidget(QtWidgets.QWidget):
             remove_button.setFixedSize(add_button.size())
 
             name_lineedit = QtWidgets.QLineEdit()
-
             name_lineedit.setPlaceholderText('Name')
             name_lineedit.setFixedWidth(60)
+            name_lineedit.setFocusPolicy(Qt.ClickFocus)
 
             side_combobox = QtWidgets.QComboBox()
             side_combobox.setFixedWidth(40)
@@ -71,6 +72,7 @@ class OsseousWidget(QtWidgets.QWidget):
             num_joints_lineedit = QtWidgets.QLineEdit()
             num_joints_lineedit.setPlaceholderText('#')
             num_joints_lineedit.setFixedWidth(30)
+            num_joints_lineedit.setAlignment(Qt.AlignRight)
 
             parent_combobox = QtWidgets.QComboBox()
             parent_combobox.setFixedWidth(60)
@@ -86,14 +88,19 @@ class OsseousWidget(QtWidgets.QWidget):
 
             add_button.clicked.connect(self.on_add_clicked)
             remove_button.clicked.connect(self.on_remove_clicked)
-            name_lineedit.textChanged.connect(self.line_edit_changed)
+            name_lineedit.editingFinished.connect(self.line_edit_changed)
 
             return layout
 
         def line_edit_changed(self):
             clicked_button_layout = self.retrive_layout_from_sender(self.sender(), self.d_module_data)
-
             parent_index = self.osseous_widget.body_layout.indexOf(clicked_button_layout)
+
+            self.qslm_parent_names.setData(self.qslm_parent_names.index(parent_index), 
+                                           self.sender().text(),
+                                           Qt.EditRole)
+
+            print(f'{parent_index} {self.sender().text()}')
 
         def on_add_clicked(self):
             """
