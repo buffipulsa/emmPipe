@@ -125,9 +125,9 @@ class Control:
 
     def _rename(self):
     
-        self.os_grp = cmds.rename(self.os_grp, f'{self._name}_{self._side}_{str(self.index).zfill(2)}_offset')
-        self.ctrl = cmds.rename(ou.node_with_attr(self.ctrl, 'isControl'), f'{self._name}_{self._side}_{str(self.index).zfill(2)}')
-        self.shapes = [cmds.rename(shape, f'{self._name}_{self._side}_{str(self.index).zfill(2)}_Shape') for shape in self.shapes]
+        self.ctrl = cmds.rename(ou.node_with_attr(self.ctrl, 'isControl'), f'{self._name}_{self._side}_{str(self.index).zfill(2)}_ctrl')
+        self.os_grp = cmds.rename(self.os_grp, f'{self._name}_{self._side}_{str(self.index).zfill(2)}_srtBuffer')
+        self.shapes = [cmds.rename(shape, f'{self._name}_{self._side}_{str(self.index).zfill(2)}Shape') for shape in self.shapes]
 
     def extra_groups(self, *args):
 

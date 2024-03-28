@@ -3,6 +3,7 @@ import os
 import tkinter as tk
 import ttkbootstrap as ttk
 
+from emmPipe.path_utils import CodePaths, MayaPaths
 
 class LauncherUI(ttk.Window):
     """
@@ -11,18 +12,6 @@ class LauncherUI(ttk.Window):
     This class represents the application window and contains methods for setting up the UI,
     handling user interactions, and launching Maya.
     """
-
-    MAYA_PATH = r"C:\Program Files\Autodesk\Maya{}\bin\maya.exe"
-
-    BASEPATH = r'D:\Rigs'
-    PROJECTS_PATH = os.path.join(BASEPATH, 'Projects')
-    REPO_PATH = os.path.join(BASEPATH, 'emmPipe')
-    MAYA_SCRIPT_PATH = os.path.join(BASEPATH, 'emmPipe', 'emmPipe')
-    
-    PLUGIN_PATH = os.path.join(REPO_PATH, "plug-ins")
-    ICONS_PATH = os.path.join(REPO_PATH, "icons")
-    PROD_SHELF_PATH = os.path.join(REPO_PATH, "shelves", 'prod')
-    DEV_SHELF_PATH = os.path.join(REPO_PATH, "shelves", 'dev')
 
     APP_ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'launcher_ui.png')
 
@@ -54,12 +43,13 @@ class LauncherUI(ttk.Window):
         This method sets the PYTHONPATH, MAYA_PLUG_IN_PATH, MAYA_SHELF_PATH, and XBMLANGPATH
         environment variables to the appropriate paths for emmPipe.
         """
-        os.environ["PYTHONPATH"] = __class__.REPO_PATH
-        os.environ["MAYA_SCRIPT_PATH"] = __class__.MAYA_SCRIPT_PATH
-        os.environ["MAYA_PLUG_IN_PATH"] = __class__.PLUGIN_PATH
-        os.environ["MAYA_SHELF_PATH"] = __class__.PROD_SHELF_PATH
-        os.environ["XBMLANGPATH"] = __class__.ICONS_PATH
-        os.environ["EMMPIPE_PROJECTS_PATH"] = __class__.PROJECTS_PATH
+
+        os.environ['PYTHONPATH'] = CodePaths.get_repo_path()
+        os.environ['MAYA_SCRIPT_PATH'] = MayaPaths.get_maya_script_path()
+        os.environ["MAYA_PLUG_IN_PATH"] = MayaPaths.get_plugin_path()
+        os.environ["MAYA_SHELF_PATH"] = MayaPaths.get_prod_shelf_path()
+        os.environ["XBMLANGPATH"] = MayaPaths.get_icons_path()
+        os.environ["EMMPIPE_PROJECTS_PATH"] = CodePaths.get_projects_path()
         os.environ["EMMPIPE_MODE"] = self.prod_or_dev_cbox.get()
 
         self.set_mode_to_dev_or_prod(os.environ["EMMPIPE_MODE"])
@@ -121,7 +111,7 @@ class LauncherUI(ttk.Window):
         """
         self.set_paths()
 
-        os.startfile(__class__.MAYA_PATH.format(self.get_maya_version()))
+        os.startfile(MayaPaths.get_maya_path(self.get_maya_version()))
         
         return 
     
@@ -151,7 +141,7 @@ class LauncherUI(ttk.Window):
         Set the environment variables for development mode.
         """
         if mode == 'Development':
-            os.environ["MAYA_SHELF_PATH"] = __class__.DEV_SHELF_PATH
+            os.environ["MAYA_SHELF_PATH"] = MayaPaths.get_dev_shelf_path()
         
             os.environ['MAYA_NO_CONSOLE_WINDOW'] = '0'
             os.environ['MAYA_DISABLE_CIP'] = '1'
@@ -160,7 +150,7 @@ class LauncherUI(ttk.Window):
 
 
         if mode == 'Production':
-            os.environ["MAYA_SHELF_PATH"] = __class__.PROD_SHELF_PATH
+            os.environ["MAYA_SHELF_PATH"] = MayaPaths.get_prod_shelf_path()
 
             os.environ['MAYA_NO_CONSOLE_WINDOW'] = '1'
 
@@ -241,7 +231,7 @@ class MayaIconButton(ttk.Button):
     """
     def __init__(self, master, **kwargs):
         super(MayaIconButton, self).__init__(master, **kwargs)
-        self.icon = tk.PhotoImage(file=f'{master.ICONS_PATH}/mayaico.png')
+        self.icon = tk.PhotoImage(file=f'{MayaPaths.get_icons_path()}/mayaico.png')
         self.config(image=self.icon)
         self.pack()
     

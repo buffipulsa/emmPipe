@@ -23,7 +23,7 @@ class MainUI(DockableUI):
 
     WINDOW_TITLE = 'emmPipe'
 
-    WINDOW_WIDTH = 300
+    WINDOW_WIDTH = 350
     WINDOW_HEIGHT = 1000
 
     def __init__(self):

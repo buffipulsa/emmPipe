@@ -7,13 +7,12 @@ from ..objects import object_utils as ou
 
 class Osseous:
 
-    def __init__(self, side, name, joints_num, parent=None):
-        
-        self._side = side.lower()
-        self._name = name.lower()
-        self._joints_num = joints_num
+    def __init__(self):
 
-        self._parent = parent if self._check_parent(parent) else None
+        self._name = None
+        self.side = None
+        self._num_joints = 1
+        self._parent = None
 
         self._root_joint = 'root_c_00'
 
@@ -25,17 +24,40 @@ class Osseous:
         self.parent_pos = [0, 0, 0]
     
     @property
-    def side(self):
-        return self._side
-    
-    @property
     def name(self):
         return self._name
     
+    @name.setter
+    def name(self, value):
+        self._name = value.lower()
+
     @property
-    def joints_num(self):
-        return self._joints_num
+    def side(self):
+        return self._side
     
+    @side.setter
+    def side(self, value):
+        self._side = value.upper()
+    
+    @property
+    def num_joints(self):
+        return self._num_joints
+    
+    @num_joints.setter
+    def num_joints(self, value):
+        self._num_joints = value
+    
+    @property
+    def parent(self):
+        return self._parent
+    
+    @parent.setter
+    def parent(self, value):
+        if self._check_parent(value):
+            self._parent = value
+        else:
+            self._parent = None
+
     @property
     def joints(self):
         return self._joints
@@ -75,23 +97,6 @@ class Osseous:
 
         return self
     
-    # def chain_parent(self, index):
-    #     """
-    #     Sets the root joint of the current joint chain.
-
-    #     Args:
-    #         index (int): The index of the root joint in the list of joints.
-
-    #     Returns:
-    #         self: Returns the current instance of the class.
-    #     """
-    #     if self._parent:
-    #         self._parent_joint = self._parent.joints[index]
-    #     else:
-    #         raise ValueError(f'The instance {self.__class__.__name__}.{self._name} has no parent')
-        
-    #     return self
-    
     def _check_parent(self, parent):
         """
         Checks if the given parent is a valid Osseous instance.
@@ -130,16 +135,16 @@ class Osseous:
             cmds.setAttr(f'{self.joints_grp}.overrideDisplayType', 2)
             
 
-        self._module_grp = cmds.createNode('transform', name=f'{self._side}_{self._name}_osseous')
+        self._module_grp = cmds.createNode('transform', name=f'{self._name}_{self._side}_osseous_hrc')
         cmds.parent(self._module_grp, self.top_grp)
 
-        self._ctrls_grp = cmds.createNode('transform', name=f'{self._side}_{self._name}_controls')
+        self._ctrls_grp = cmds.createNode('transform', name=f'{self._name}_{self._side}_controls_hrc')
         cmds.parent(self._ctrls_grp, self._module_grp)
 
-        self.utils_grp = cmds.createNode('transform', name=f'{self._side}_{self._name}_utils')
+        self.utils_grp = cmds.createNode('transform', name=f'{self._name}_{self._side}_utils_hrc')
         cmds.parent(self.utils_grp, self._module_grp)
 
-        self.annotation_grp = cmds.createNode('transform', name=f'{self._side}_{self._name}_annotations')
+        self.annotation_grp = cmds.createNode('transform', name=f'{self._name}_{self._side}_annotations_hrc')
         cmds.parent(self.annotation_grp, self._module_grp)
 
         return
@@ -172,7 +177,7 @@ class Osseous:
         """
         Creates joints for the osseous rig element.
         """
-        self.c_joints = Joints(self._side, self._name, self._joints_num).create()
+        self.c_joints = Joints(self._side, self._name, self._num_joints).create()
         self.c_joints.radius = 0.1
         self._joints = self.c_joints._joints
 
@@ -210,12 +215,12 @@ class Osseous:
         """
         x, y, z = self.parent_pos
 
-        if self._side == 'l':
+        if self._side == 'L':
             cmds.xform(self.first_joint, ws=True, translation=(x + 5, y, z))
-        elif self._side == 'r':
+        elif self._side == 'R':
             cmds.xform(self.first_joint, ws=True, translation=(x - 5, y, z))
             cmds.setAttr(f'{self.first_joint}.rotateY', 180)
-        elif self._side == 'c':
+        elif self._side == 'C':
             cmds.xform(self.first_joint, ws=True, translation=(x, y + 5, z))
             cmds.setAttr(f'{self.first_joint}.rotateZ', 90)
 
