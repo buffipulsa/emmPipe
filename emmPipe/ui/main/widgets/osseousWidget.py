@@ -23,18 +23,22 @@ class OsseousWidget(QtWidgets.QWidget):
         super().__init__(parent)
 
         self.d_module_data = {}
+        self.module_data = []
+
+        self.qslm_parent_names = QtCore.QStringListModel()
 
         self.add_widgets()
         self.add_layouts()
         self.add_connections()
-
-        self.qslm_parent_names = QtCore.QStringListModel()
     
-        self.osseous_widget.body_layout.insertLayout(0, self.module_layout())
+        #self.osseous_widget.body_layout.insertLayout(0, self.module_layout())
 
     def add_widgets(self):
         
         self.osseous_widget = CollapsibleWidget('Osseous')
+
+        self.osseous_module_widget = OsseousModuleWidget(self, self.module_data)
+        self.module_data.append(self.osseous_module_widget)
 
         self.build_button = QtWidgets.QPushButton('Build')
 
@@ -42,11 +46,16 @@ class OsseousWidget(QtWidgets.QWidget):
 
         self.layout = QVBoxLayout(self)
 
+        self.osseous_widget.body_layout.insertWidget(0, self.osseous_module_widget)
+
         self.layout.addWidget(self.osseous_widget)
         self.layout.addWidget(self.build_button)
 
     def add_connections(self):
         
+        #self.osseous_module_widget.add_button.clicked.connect(self.on_add_clicked)
+        #self.osseous_module_widget.remove_button.clicked.connect(self.on_remove_clicked)
+
         self.build_button.clicked.connect(self.build)
 
     def build(self):
@@ -120,7 +129,6 @@ class OsseousWidget(QtWidgets.QWidget):
         status_label.setFixedWidth(self.OK_PIXMAD.width())
         status_label.setFixedHeight(self.OK_PIXMAD.height())
         status_label.setPixmap(self.OK_PIXMAD)
-        #status_label.setStyleSheet(f'background-color: {self.LABEL_COLOR};
 
         layout.addWidget(add_button)
         layout.addWidget(remove_button)
@@ -159,8 +167,10 @@ class OsseousWidget(QtWidgets.QWidget):
         """
         clicked_button_layout = self.retrive_layout_from_sender(self.sender(), self.d_module_data)
         parent_index = self.osseous_widget.body_layout.indexOf(clicked_button_layout)
-        new_layout = self.module_layout()
-        self.osseous_widget.body_layout.insertLayout(parent_index+1, new_layout)
+        #new_layout = self.module_layout()
+        self.new_layout = OsseousModuleWidget()
+        #self.osseous_widget.body_layout.insertLayout(parent_index+1, new_layout)
+        self.osseous_widget.body_layout.insertWidget(parent_index+1, self.new_layout)
 
         l_parent_names = [] 
         for i in range(self.osseous_widget.body_layout.count() - 1):
@@ -173,9 +183,9 @@ class OsseousWidget(QtWidgets.QWidget):
         
         self.qslm_parent_names.setStringList(l_parent_names)
 
-        self.d_module_data[new_layout][5].clear()
-        self.d_module_data[new_layout][5].setMaxVisibleItems(parent_index+1)
-        self.d_module_data[new_layout][5].setModel(self.qslm_parent_names)
+        self.d_module_data[self.new_layout][5].clear()
+        self.d_module_data[self.new_layout][5].setMaxVisibleItems(parent_index+1)
+        self.d_module_data[self.new_layout][5].setModel(self.qslm_parent_names)
 
     def on_remove_clicked(self):
         """
@@ -183,6 +193,7 @@ class OsseousWidget(QtWidgets.QWidget):
 
         This method removes the clicked button layout and its associated widgets from the parent layout.
         """
+        print('test')
         if len(self.d_module_data) > 1:
             clicked_button_layout = self.retrive_layout_from_sender(self.sender(), self.d_module_data)
             
@@ -231,5 +242,133 @@ class OsseousWidget(QtWidgets.QWidget):
     #     self.string_list_model.setStringList(items)
 
 
+class OsseousModuleWidget(QtWidgets.QWidget):
+
+    ADD_PIXMAD = QtGui.QPixmap(':addClip.png')
+    REMOVE_PIXMAD = QtGui.QPixmap(':removeRenderable.png')
+
+    OK_PIXMAD = QtGui.QPixmap(':confirm.png')
+    BROKEN_PIXMAD = QtGui.QPixmap(':caution.png')
+
+    def __init__(self, parent=None, module_data=None):
+        super().__init__(parent)
+        self.module_data = module_data
+        #self.module_data.append(self)
+
+        self.parent = parent
+
+        self.add_widgets()
+        self.add_layouts()
+        self.add_connections()
+    
+    def add_widgets(self):
         
+        self.add_button = QtWidgets.QPushButton()
+        self.add_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self.ADD_PIXMAD.scaled(10, 10)
+        self.add_button.setIcon(self.ADD_PIXMAD)
+        self.add_button.setFixedSize(self.ADD_PIXMAD.size())
+
+        self.remove_button = QtWidgets.QPushButton()
+        self.remove_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self.REMOVE_PIXMAD.scaled(10, 10)
+        self.remove_button.setIcon(self.REMOVE_PIXMAD)
+        self.remove_button.setFixedSize(self.ADD_PIXMAD.size())
+
+        self.name_lineedit = QtWidgets.QLineEdit()
+        self.name_lineedit.setPlaceholderText('Name')
+        self.name_lineedit.setFixedWidth(60)
+        self.name_lineedit.setFocusPolicy(Qt.ClickFocus)
+        self.name_lineedit.setText(str(0))
+
+        self.side_combobox = QtWidgets.QComboBox()
+        self.side_combobox.setFixedWidth(40)
+        self.side_combobox.addItem('C')
+        self.side_combobox.addItem('L')
+        self.side_combobox.addItem('R')
+
+        self.num_joints_lineedit = QtWidgets.QLineEdit('1')
+        self.num_joints_lineedit.setFixedWidth(30)
+        self.num_joints_lineedit.setAlignment(Qt.AlignRight)
+
+        self.parent_combobox = QtWidgets.QComboBox()
+        self.parent_combobox.setFixedWidth(60)
+        self.parent_combobox.setMaxVisibleItems(0)
+        self.parent_combobox.setModel(self.parent.qslm_parent_names)
+
+        self.status_label = QtWidgets.QLabel('a')
+        self.status_label.setFixedWidth(self.OK_PIXMAD.width())
+        self.status_label.setFixedHeight(self.OK_PIXMAD.height())
+        self.status_label.setPixmap(self.OK_PIXMAD)
+
+    def add_layouts(self):
+
+        self.layout = QHBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setAlignment(QtCore.Qt.AlignLeft)
+
+        self.layout.addWidget(self.add_button)
+        self.layout.addWidget(self.remove_button)
+        self.layout.addWidget(self.name_lineedit)
+        self.layout.addWidget(self.side_combobox)
+        self.layout.addWidget(self.num_joints_lineedit)
+        self.layout.addWidget(self.parent_combobox)
+        self.layout.addWidget(self.status_label)
+
+    def add_connections(self):
+        
+        self.add_button.clicked.connect(self.on_add_clicked)
+        #self.remove_button.clicked.connect(self.on_remove_clicked)
+        self.name_lineedit.editingFinished.connect(self.on_line_edit_changed)
+
+    def on_add_clicked(self):
+        """
+        Event handler for the 'add' button click.
+
+        This method is called when the 'add' button is clicked. It retrieves the layout from the sender button,
+        determines its parent index in the body layout, and inserts a new module layout at the next index.
+        """
+        clicked_button_widget = self.sender().parent().layout.parent()
+        parent_index = self.parent.osseous_widget.body_layout.indexOf(clicked_button_widget)
+        
+        new_widget = OsseousModuleWidget(self.parent, self.module_data)
+        self.module_data.insert(parent_index+1, new_widget)
+
+        self.parent.osseous_widget.body_layout.insertWidget(parent_index+1, new_widget)
+        new_widget.name_lineedit.setText(str(parent_index+1))
+        
+        # parent_names = [f'{widget.name_lineedit.text()}({widget.side_combobox.currentText()})' for widget in self.module_data[:-1]]
+        new_widget.parent_combobox.setMaxVisibleItems(len(self.module_data)-1)
+        for widget in self.module_data[1:]:
+            parent_names = [f'{widget.name_lineedit.text()}({widget.side_combobox.currentText()})' \
+                            for widget in self.module_data[:-1]]
+            widget.parent_combobox.clear()
+        self.parent.qslm_parent_names.setStringList(parent_names)
+        print(parent_names)
+
+        
+        # for widget in self.module_data[new_index:]:
+        #     print(self.module_data.index(widget))
+
+            #widget.name_lineedit.setText('After')
+            
+            # if widget in self.module_data:
+            #     print(widget)
+            #     widget.parent_combobox.clear()
+            #     widget.parent_combobox.setMaxVisibleItems(parent_index+1)
+            #     widget.parent_combobox.setModel(self.parent.qslm_parent_names)
+    
+    def update_parent_list(self):
+        pass
+
+    def on_line_edit_changed(self):
+
+        clicked_button_layout = self.sender().parent().layout.parent()
+        parent_index = self.parent.osseous_widget.body_layout.indexOf(clicked_button_layout)
+
+        self.parent.qslm_parent_names.setData(self.parent.qslm_parent_names.index(parent_index), 
+                                        self.sender().text(),
+                                        Qt.EditRole)
+
+
 
