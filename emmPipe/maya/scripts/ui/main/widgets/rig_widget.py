@@ -6,7 +6,7 @@ from PySide2.QtWidgets import QVBoxLayout
 
 import maya.cmds as cmds
 
-from emmPipe.ui.main.widgets.osseousWidget import OsseousWidget
+from ui.main.widgets.osseousWidget import OsseousWidget
 
 class RigWidget(QtWidgets.QWidget):
     """

@@ -6,7 +6,7 @@ import maya.api.OpenMaya as om
 import maya.api.OpenMayaAnim as oma
 import maya.cmds as cmds
 
-from emmPipe.rig.objects.object_data import ObjectData
+from rig.objects.object_data import ObjectData
 
 class SkinclusterData(ObjectData):
     """

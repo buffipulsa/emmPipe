@@ -6,9 +6,9 @@ from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QStackedWidget, QFileSys
 from PySide2.QtWidgets import QTabWidget, QTabBar
 from PySide2.QtCore import QStringListModel, QModelIndex
 
-from emmPipe.ui.ui_utils import InfoButtonWidget
-from emmPipe.rig.component.component import Component
-from emmPipe.ui.ui_path_model import UIPathModel
+from ui.ui_utils import InfoButtonWidget
+from rig.component.component import Component
+from ui.ui_path_model import UIPathModel
 
 class AssetWidget(QtWidgets.QWidget):
     """

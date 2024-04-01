@@ -8,8 +8,8 @@ from PySide2 import QtGui
 
 import maya.cmds as cmds
 
-from emmPipe.ui.ui_utils import CollapsibleWidget
-from emmPipe.rig.osseous.osseous import Osseous
+from ui.ui_utils import CollapsibleWidget
+from rig.osseous.osseous import Osseous
 
 class OsseousWidget(QtWidgets.QWidget):
 

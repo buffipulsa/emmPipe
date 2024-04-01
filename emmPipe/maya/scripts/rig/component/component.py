@@ -5,7 +5,7 @@ import shutil
 
 import maya.cmds as cmds
 
-from emmPipe.rig.deformers import skincluster, ngSkinToolsData 
+from rig.deformers import skincluster, ngSkinToolsData 
 
 
 class Component:

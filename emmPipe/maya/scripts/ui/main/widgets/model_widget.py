@@ -6,7 +6,7 @@ from PySide2.QtWidgets import QVBoxLayout
 
 import maya.cmds as cmds
 
-from emmPipe.rig.component import component
+from rig.component import component
 
 class ModelWidget(QtWidgets.QWidget):
     """
