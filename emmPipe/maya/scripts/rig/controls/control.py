@@ -1,8 +1,9 @@
 
 import maya.cmds as cmds
 
-from . import control_shapes
-from ..objects import object_utils as ou
+from rig.controls import control_shapes
+from rig.objects import object_utils as ou
+from rig.objects.object_data import DagNodeData, DependencyNodeData
 
 
 class Control:
@@ -19,6 +20,26 @@ class Control:
 
         self._thickness = 1
         self._color = 'yellow'
+
+        self.os_grp, self.ctrl, self.shapes = control_shapes.shapes(self._shape)
+
+        self._mark_as_control()
+        self._mark_side()
+        self._mark_part()
+        self._mark_control_index()
+        
+        self._rename()
+
+        if self._side   == 'l': self.color = 'blue'
+        elif self._side == 'r': self.color = 'red'
+        else:                   self.color = 'yellow'
+        self.thickness = self._thickness
+
+        #self.c_objData = DagNodeData(self.ctrl)
+
+        # self.lock_visibility(True)
+        # self.scale_ctrl(self.scale)
+        # self.lock_transforms('scale')
 
     def create(self):
 
@@ -41,6 +62,14 @@ class Control:
         # self.lock_transforms('scale')
 
         return self
+    
+    @property
+    def m_obj(self):
+        return self.c_objData.m_obj
+
+    @property
+    def dag_path(self):
+        return self.c_objData.dag_path
 
     def match_transforms(self, obj=None, objType=None, coords=None, pos=True, rot=True, scale=False):
         """ This method matches controller translation and rotation to desired object.

@@ -6,9 +6,9 @@ import maya.api.OpenMaya as om
 import maya.api.OpenMayaAnim as oma
 import maya.cmds as cmds
 
-from rig.objects.object_data import ObjectData
+from rig.objects.object_data import DagNodeData
 
-class SkinclusterData(ObjectData):
+class SkinclusterData(DagNodeData):
     """
     Class representing skin cluster data.
     """
@@ -26,11 +26,7 @@ class SkinclusterData(ObjectData):
         """
         super().__init__(node)
 
-        if not node:
-            raise TypeError('No node assigned')
-
-        self._node = node
-        self._skincluster_node = skincluster_node
+        self._skincluster = self._get_skincluster() if not skincluster_node else skincluster_node
 
         return
     
@@ -48,34 +44,17 @@ class SkinclusterData(ObjectData):
         return attr_value
 
     @property
-    def node(self):
-        """
-        str: The name of the node.
-        """
-        return self._node
-
-    @property
-    def skincluster_node(self):
+    def skincluster(self):
         """
         Get the name of the skincluster node.
 
         Returns:
             str: The name of the skincluster node.
         """
+        self._skincluster_node = self._get_skincluster()
         return self._skincluster_node
-    
-    @property
-    def skincluster_name(self):
-        """
-        Get the name of the skincluster node to be saved.
 
-        Returns:
-            str: The name of the skincluster node.
-        """
-        return 'skinCluster_{}'.format(self.node)
-
-    @property
-    def skincluster(self):
+    def _get_skincluster(self):
         """
         Returns the skincluster node associated with the shape node.
 
@@ -89,21 +68,19 @@ class SkinclusterData(ObjectData):
         Raises:
             TypeError: If the shape node does not have a skincluster node or a shape node.
         """
-        if self.skincluster_node:
-            skincls = self.skincluster_node
-        else:
-            skincls = None
+        skincls = None
 
-            if self.shape:
+        if self.shapes:
+            for shape in self.shapes:
                 try:
                     skincls = cmds.ls(cmds.listHistory(self.dag_path.fullPathName()),
                                         type='skinCluster')[0]
                 except:
-                    raise TypeError('{} does not have a skincluster node!'.format(self.shape))
+                    raise TypeError('{} does not have a skincluster node!'.format(shape))
 
-            else:
-                raise TypeError('{} does not have a shape node!'
-                                .format(self.dag_path.partialPathName()))
+        else:
+            raise TypeError('{} does not have a shape node!'
+                            .format(self.dag_path.partialPathName()))
 
         return skincls
 
