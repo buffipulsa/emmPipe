@@ -15,7 +15,6 @@ class DependencyNodeData:
         TypeError: If no node is assigned.
         ValueError: If the node is a DAG node.
     """
-
     def __init__(self, node=None):
         """
         Initializes a new instance of the DependencyNodeData class.
@@ -28,8 +27,6 @@ class DependencyNodeData:
         """
         if not node:
             raise TypeError('No node assigned')
-        
-        self.dag_node_types = ['transform', 'mesh', 'nurbsCurve', 'nurbsSurface', 'camera', 'light']
 
         self.selection = om.MSelectionList()
         self.selection.add(node)
@@ -69,7 +66,7 @@ class DependencyNodeData:
         
         Raises a ValueError if the node is a DAG node, suggesting the use of the DagNodeData class instead.
         """
-        if cmds.nodeType(self._dependnode_fn.name()) in self.dag_node_types:
+        if self.selection.getDagPath(0).isValid():
             raise ValueError(f'{self._dependnode_fn.name()} is a DAG node. Please use the DagNodeData class instead.')
 
     def _get_m_obj(self):
@@ -225,7 +222,7 @@ class DagNodeData(DependencyNodeData):
         Raises:
             ValueError: If the node is a dependency node.
         """
-        if cmds.nodeType(self._dependnode_fn.name()) not in self.dag_node_types:
+        if not self.selection.getDagPath(0).isValid():
             raise ValueError(f'{self._dependnode_fn.name()} is a Dependency node. Please use the DependencyNodeData class instead.')
 
     def _get_dag_path(self):

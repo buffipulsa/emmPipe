@@ -1,329 +1,312 @@
 
 import maya.cmds as cmds
 
-def shapes(shape):
+class ControlShapes:
 
-    osGrp = cmds.group(empty=True)
-    ctrl = None
+    SHAPES = ['circle', 'square', 'box', 'cone', 'orb', 'COG', 'diamond', 
+                  'arrowSquare', 'diamondCross', 'triangle']
 
-    if shape == 'circle':
-        ctrl = circle()
-    elif shape == 'square':
-        ctrl = square()
-    elif shape == 'box':
-        ctrl = box()
-    elif shape == 'cone':
-        ctrl = cone()
-    elif shape == 'orb':
-        ctrl = orb()
-    elif shape == 'COG':
-        ctrl = COG()
-    elif shape == 'diamond':
-        ctrl = diamond()
-    elif shape == 'arrowSquare':
-        ctrl = arrowSquare()
-    elif shape == 'diamondCross':
-        ctrl = diamondCross()
-    elif shape == 'triangle':
-        ctrl = triangle()
-    else:
-        raise ValueError('Please pick a control shape')
-    
-    shape = cmds.listRelatives(ctrl, shapes=True)
+    def __init__(self, shape):
 
-    cmds.parent(ctrl, osGrp)
+        if shape in self.SHAPES:
+            shape_method = getattr(__class__, shape)
+            self._ctrl = shape_method(self)
+        else:
+            raise ValueError(f'Please pick a control shape. Available shapes: {self.SHAPES}')
 
-    return osGrp, ctrl, shape
+    @property
+    def name(self):
+        return self._ctrl
 
-def create_shape(positions):
+    def create_shape(self, positions):
 
-    temp_transforms = []
+        temp_transforms = []
 
-    for pos in positions:
-        crv = cmds.curve(d=1, p=pos)
+        for pos in positions:
+            crv = cmds.curve(d=1, p=pos)
 
-        temp_transforms.append(crv)
+            temp_transforms.append(crv)
 
-    crv_transform = cmds.group(name='nurbsCircle1', empty=True)
-    for temp_transform in temp_transforms:
-        shape = cmds.listRelatives(temp_transform, shapes=True)
-        cmds.parent(shape, crv_transform, r=True, shape=True)
+        crv_transform = cmds.createNode('transform', name='nurbsCircle1')
+        for temp_transform in temp_transforms:
+            shape = cmds.listRelatives(temp_transform, shapes=True)
+            cmds.parent(shape, crv_transform, r=True, shape=True)
 
-    cmds.delete(temp_transforms)
+        cmds.delete(temp_transforms)
 
-    return crv_transform
+        return crv_transform
 
-def circle(curveScale=1.0):
-    """ circle shape """
+    def circle(self, curveScale=1.0):
+        """ circle shape """
 
-    crv = cmds.circle(normal=[1,0,0], ch=False, radius=curveScale*0.5)[0]
+        crv = cmds.circle(normal=[0,11,0], ch=False, radius=curveScale*0.5)[0]
 
-    return crv
+        return crv
 
 
-def square(curveScale=1.0):
-    """
-    square shape
-    """
+    def square(self, curveScale=1.0):
+        """
+        square shape
+        """
 
-    pos = []
-    pos.append((-1.000000, 0.000000, 1.000000))
-    pos.append((-1.000000, 0.000000, -1.000000))
-    pos.append((1.000000, 0.000000, -1.000000))
-    pos.append((1.000000, 0.000000, 1.000000))
-    pos.append((-1.000000, 0.000000, 1.000000))
+        pos = []
+        pos.append((-1.000000, 0.000000, 1.000000))
+        pos.append((-1.000000, 0.000000, -1.000000))
+        pos.append((1.000000, 0.000000, -1.000000))
+        pos.append((1.000000, 0.000000, 1.000000))
+        pos.append((-1.000000, 0.000000, 1.000000))
 
-    return create_shape([pos])
+        return self.create_shape([pos])
 
-def arrowSquare():
-    """ arrow-square shape """
+    def arrowSquare(self):
+        """ arrow-square shape """
 
-    pos = []
-    pos.append( ( 0.510003, 0.000000, -0.382900 ) )
-    pos.append( ( 0.510003, 0.000000, 0.382900 ) )
-    pos.append( ( 0.000000, 0.000000, 0.765800 ) )
-    pos.append( ( -0.510003, 0.000000, 0.382900 ) )
-    pos.append( ( -0.510003, 0.000000, -0.382900 ) )
-    pos.append( ( 0.510003, 0.000000, -0.382900 ) )
+        pos = []
+        pos.append( ( 0.510003, 0.000000, -0.382900 ) )
+        pos.append( ( 0.510003, 0.000000, 0.382900 ) )
+        pos.append( ( 0.000000, 0.000000, 0.765800 ) )
+        pos.append( ( -0.510003, 0.000000, 0.382900 ) )
+        pos.append( ( -0.510003, 0.000000, -0.382900 ) )
+        pos.append( ( 0.510003, 0.000000, -0.382900 ) )
 
-    return create_shape([pos])
+        return self.create_shape([pos])
 
-def arrowSquareY():
-    """ arrow-square shape """
+    def arrowSquareY(self):
+        """ arrow-square shape """
 
-    pos = []
-    pos.append( ( 0.510003, 0.382900, 0.000000 ) )
-    pos.append( ( 0.510003, -0.382900, -0.000000 ) )
-    pos.append( ( 0.000000, -0.765800, -0.000000 ) )
-    pos.append( ( -0.510003, -0.382900, -0.000000 ) )
-    pos.append( ( -0.510003, 0.382900, 0.000000 ) )
-    pos.append( ( 0.510003, 0.382900, 0.000000 ) )
+        pos = []
+        pos.append( ( 0.510003, 0.382900, 0.000000 ) )
+        pos.append( ( 0.510003, -0.382900, -0.000000 ) )
+        pos.append( ( 0.000000, -0.765800, -0.000000 ) )
+        pos.append( ( -0.510003, -0.382900, -0.000000 ) )
+        pos.append( ( -0.510003, 0.382900, 0.000000 ) )
+        pos.append( ( 0.510003, 0.382900, 0.000000 ) )
 
-    return create_shape([pos])
+        return self.create_shape([pos])
 
-def box():
-    """ box shape """
+    def box(self):
+        """ box shape """
 
-    pos = []
-    pos.append( ( 0.500000, 0.499745, 0.500000 ) )
-    pos.append( ( -0.500000, 0.499745, 0.500000 ) )
-    pos.append( ( -0.500000, -0.500255, 0.500000 ) )
-    pos.append( ( 0.500000, -0.500255, 0.500000 ) )
-    pos.append( ( 0.500000, 0.499745, 0.500000 ) )
-    pos.append( ( 0.500000, 0.499745, -0.500000 ) )
-    pos.append( ( 0.500000, -0.500255, -0.500000 ) )
-    pos.append( ( 0.500000, -0.500255, 0.500000 ) )
-    pos.append( ( 0.500000, 0.499745, 0.500000 ) )
-    pos.append( ( 0.500000, 0.499745, -0.500000 ) )
-    pos.append( ( -0.500000, 0.499745, -0.500000 ) )
-    pos.append( ( -0.500000, -0.500255, -0.500000 ) )
-    pos.append( ( 0.500000, -0.500255, -0.500000 ) )
-    pos.append( ( -0.500000, -0.500255, -0.500000 ) )
-    pos.append( ( -0.500000, -0.500255, 0.500000 ) )
-    pos.append( ( -0.500000, 0.499745, 0.500000 ) )
-    pos.append( ( -0.500000, 0.499745, -0.500000 ) )
+        pos = []
+        pos.append( ( 0.500000, 0.499745, 0.500000 ) )
+        pos.append( ( -0.500000, 0.499745, 0.500000 ) )
+        pos.append( ( -0.500000, -0.500255, 0.500000 ) )
+        pos.append( ( 0.500000, -0.500255, 0.500000 ) )
+        pos.append( ( 0.500000, 0.499745, 0.500000 ) )
+        pos.append( ( 0.500000, 0.499745, -0.500000 ) )
+        pos.append( ( 0.500000, -0.500255, -0.500000 ) )
+        pos.append( ( 0.500000, -0.500255, 0.500000 ) )
+        pos.append( ( 0.500000, 0.499745, 0.500000 ) )
+        pos.append( ( 0.500000, 0.499745, -0.500000 ) )
+        pos.append( ( -0.500000, 0.499745, -0.500000 ) )
+        pos.append( ( -0.500000, -0.500255, -0.500000 ) )
+        pos.append( ( 0.500000, -0.500255, -0.500000 ) )
+        pos.append( ( -0.500000, -0.500255, -0.500000 ) )
+        pos.append( ( -0.500000, -0.500255, 0.500000 ) )
+        pos.append( ( -0.500000, 0.499745, 0.500000 ) )
+        pos.append( ( -0.500000, 0.499745, -0.500000 ) )
 
-    return create_shape([pos])
+        return self.create_shape([pos])
 
-def square():
-    """ square shape """
+    def square(self):
+        """ square shape """
 
-    pos = []
-    pos.append( ( -1.000000, 0.000000, 1.000000 ) )
-    pos.append( ( -1.000000, 0.000000, -1.000000 ) )
-    pos.append( ( 1.000000, 0.000000, -1.000000 ) )
-    pos.append( ( 1.000000, 0.000000, 1.000000 ) )
-    pos.append( ( -1.000000, 0.000000, 1.000000 ) )
+        pos = []
+        pos.append( ( -1.000000, 0.000000, 1.000000 ) )
+        pos.append( ( -1.000000, 0.000000, -1.000000 ) )
+        pos.append( ( 1.000000, 0.000000, -1.000000 ) )
+        pos.append( ( 1.000000, 0.000000, 1.000000 ) )
+        pos.append( ( -1.000000, 0.000000, 1.000000 ) )
 
-    return create_shape([pos])
+        return self.create_shape([pos])
 
-def triangle():
-    """ triangle shape """
+    def triangle(self):
+        """ triangle shape """
 
-    pos = []
-    pos.append( ( -0.500000, 0.000000, -0.500000 ) )
-    pos.append( ( 0.000000, 0.000000, 0.500000 ) )
-    pos.append( ( 0.500000, 0.000000, -0.500000 ) )
-    pos.append( ( -0.500000, 0.000000, -0.500000 ) )
+        pos = []
+        pos.append( ( -0.500000, 0.000000, -0.500000 ) )
+        pos.append( ( 0.000000, 0.000000, 0.500000 ) )
+        pos.append( ( 0.500000, 0.000000, -0.500000 ) )
+        pos.append( ( -0.500000, 0.000000, -0.500000 ) )
 
-    return create_shape([pos])
+        return self.create_shape([pos])
 
-def cone():
-    """ cone shape """
+    def cone(self):
+        """ cone shape """
 
-    pos = []
-    pos.append( ( -0.250000, 0.000000, 0.433013 ) )
-    pos.append( ( 0.000000, 1.000000, 0.000000 ) )
-    pos.append( ( 0.250000, 0.000000, 0.433013 ) )
-    pos.append( ( -0.250000, 0.000000, 0.433013 ) )
-    pos.append( ( -0.500000, 0.000000, -0.000000 ) )
-    pos.append( ( 0.000000, 1.000000, 0.000000 ) )
-    pos.append( ( -0.500000, 0.000000, -0.000000 ) )
-    pos.append( ( -0.250000, 0.000000, -0.433013 ) )
-    pos.append( ( 0.000000, 1.000000, 0.000000 ) )
-    pos.append( ( 0.250000, 0.000000, -0.433013 ) )
-    pos.append( ( -0.250000, 0.000000, -0.433013 ) )
-    pos.append( ( 0.250000, 0.000000, -0.433013 ) )
-    pos.append( ( 0.000000, 1.000000, 0.000000 ) )
-    pos.append( ( 0.500000, 0.000000, 0.000000 ) )
-    pos.append( ( 0.250000, 0.000000, -0.433013 ) )
-    pos.append( ( 0.500000, 0.000000, 0.000000 ) )
-    pos.append( ( 0.250000, 0.000000, 0.433013 ) )
+        pos = []
+        pos.append( ( -0.250000, 0.000000, 0.433013 ) )
+        pos.append( ( 0.000000, 1.000000, 0.000000 ) )
+        pos.append( ( 0.250000, 0.000000, 0.433013 ) )
+        pos.append( ( -0.250000, 0.000000, 0.433013 ) )
+        pos.append( ( -0.500000, 0.000000, -0.000000 ) )
+        pos.append( ( 0.000000, 1.000000, 0.000000 ) )
+        pos.append( ( -0.500000, 0.000000, -0.000000 ) )
+        pos.append( ( -0.250000, 0.000000, -0.433013 ) )
+        pos.append( ( 0.000000, 1.000000, 0.000000 ) )
+        pos.append( ( 0.250000, 0.000000, -0.433013 ) )
+        pos.append( ( -0.250000, 0.000000, -0.433013 ) )
+        pos.append( ( 0.250000, 0.000000, -0.433013 ) )
+        pos.append( ( 0.000000, 1.000000, 0.000000 ) )
+        pos.append( ( 0.500000, 0.000000, 0.000000 ) )
+        pos.append( ( 0.250000, 0.000000, -0.433013 ) )
+        pos.append( ( 0.500000, 0.000000, 0.000000 ) )
+        pos.append( ( 0.250000, 0.000000, 0.433013 ) )
 
-    # crv = cmds.curve(d=1, p=pos)
+        # crv = cmds.curve(d=1, p=pos)
 
-    # return crv
+        # return crv
 
-    return create_shape([pos])
+        return self.create_shape([pos])
 
-def orb():
-    """ orb shape """
+    def orb(self):
+        """ orb shape """
 
-    pos = []
-    ####################################################
-    pos.append( ( 0.391806, -0.391806, 0.000000 ) )
-    pos.append( ( 0.000000, -0.554097, 0.000000 ) )
-    pos.append( ( -0.391806, -0.391806, 0.000000 ) )
-    pos.append( ( -0.554097, -0.000000, 0.000000 ) )
-    pos.append( ( -0.391806, 0.391806, 0.000000 ) )
-    pos.append( ( -0.000000, 0.554097, 0.000000 ) )
-    pos.append( ( 0.391806, 0.391806, 0.000000 ) )
-    pos.append( ( 0.554097, -0.000000, 0.000000 ) )
-    pos.append( ( 0.391806, -0.391806, 0.000000 ) )
-    ####################################################
-    pos2 = []
-    pos2.append( ( 0.391806, 0.000000, -0.391806 ) )
-    pos2.append( ( 0.000000, 0.000000, -0.554097 ) )
-    pos2.append( ( -0.391806, 0.000000, -0.391806 ) )
-    pos2.append( ( -0.554097, 0.000000, -0.000000 ) )
-    pos2.append( ( -0.391806, -0.000000, 0.391806 ) )
-    pos2.append( ( -0.000000, -0.000000, 0.554097 ) )
-    pos2.append( ( 0.391806, -0.000000, 0.391806 ) )
-    pos2.append( ( 0.554097, -0.000000, 0.000000 ) )
-    pos2.append( ( 0.391806, 0.000000, -0.391806 ) )
-    ####################################################
-    pos3 = []
-    pos3.append( ( 0.000000, -0.391806, -0.391806 ) )
-    pos3.append( ( 0.000000, -0.000000, -0.554097 ) )
-    pos3.append( ( 0.000000, 0.391806, -0.391806 ) )
-    pos3.append( ( -0.000000, 0.554097, -0.000000 ) )
-    pos3.append( ( -0.000000, 0.391806, 0.391806 ) )
-    pos3.append( ( -0.000000, 0.000000, 0.554097 ) )
-    pos3.append( ( -0.000000, -0.391806, 0.391806 ) )
-    pos3.append( ( 0.000000, -0.554097, 0.000000 ) )
-    pos3.append( ( 0.000000, -0.391806, -0.391806 ) )
+        pos = []
+        ####################################################
+        pos.append( ( 0.391806, -0.391806, 0.000000 ) )
+        pos.append( ( 0.000000, -0.554097, 0.000000 ) )
+        pos.append( ( -0.391806, -0.391806, 0.000000 ) )
+        pos.append( ( -0.554097, -0.000000, 0.000000 ) )
+        pos.append( ( -0.391806, 0.391806, 0.000000 ) )
+        pos.append( ( -0.000000, 0.554097, 0.000000 ) )
+        pos.append( ( 0.391806, 0.391806, 0.000000 ) )
+        pos.append( ( 0.554097, -0.000000, 0.000000 ) )
+        pos.append( ( 0.391806, -0.391806, 0.000000 ) )
+        ####################################################
+        pos2 = []
+        pos2.append( ( 0.391806, 0.000000, -0.391806 ) )
+        pos2.append( ( 0.000000, 0.000000, -0.554097 ) )
+        pos2.append( ( -0.391806, 0.000000, -0.391806 ) )
+        pos2.append( ( -0.554097, 0.000000, -0.000000 ) )
+        pos2.append( ( -0.391806, -0.000000, 0.391806 ) )
+        pos2.append( ( -0.000000, -0.000000, 0.554097 ) )
+        pos2.append( ( 0.391806, -0.000000, 0.391806 ) )
+        pos2.append( ( 0.554097, -0.000000, 0.000000 ) )
+        pos2.append( ( 0.391806, 0.000000, -0.391806 ) )
+        ####################################################
+        pos3 = []
+        pos3.append( ( 0.000000, -0.391806, -0.391806 ) )
+        pos3.append( ( 0.000000, -0.000000, -0.554097 ) )
+        pos3.append( ( 0.000000, 0.391806, -0.391806 ) )
+        pos3.append( ( -0.000000, 0.554097, -0.000000 ) )
+        pos3.append( ( -0.000000, 0.391806, 0.391806 ) )
+        pos3.append( ( -0.000000, 0.000000, 0.554097 ) )
+        pos3.append( ( -0.000000, -0.391806, 0.391806 ) )
+        pos3.append( ( 0.000000, -0.554097, 0.000000 ) )
+        pos3.append( ( 0.000000, -0.391806, -0.391806 ) )
 
-    return create_shape([pos, pos2, pos3])
+        return self.create_shape([pos, pos2, pos3])
 
-def diamond():
-    """ diamond shape """
+    def diamond(self):
+        """ diamond shape """
 
-    pos = []
-    pos.append((-1.000000, 0.000000, 0.000000))
-    pos.append((0.000000, 1.000000, 0.000000))
-    pos.append((1.000000, 0.000000, 0.000000))
-    pos.append((0.000000, -1.000000, 0.000000))
-    pos.append((-1.000000, 0.000000, 0.000000))
-    pos.append((0.000000, 1.000000, 0.000000))
-    pos.append((0.000000, 0.000000, 1.000000))
-    pos.append((0.000000, -1.000000, 0.000000))
-    pos.append((0.000000, 0.000000, -1.000000))
-    pos.append((0.000000, 1.000000, 0.000000))
-    pos.append((-1.000000, 0.000000, 0.000000))
-    pos.append((0.000000, 0.000000, 1.000000))
-    pos.append((1.000000, 0.000000, 0.000000))
-    pos.append((0.000000, 0.000000, -1.000000))
-    pos.append((-1.000000, 0.000000, 0.000000))
+        pos = []
+        pos.append((-1.000000, 0.000000, 0.000000))
+        pos.append((0.000000, 1.000000, 0.000000))
+        pos.append((1.000000, 0.000000, 0.000000))
+        pos.append((0.000000, -1.000000, 0.000000))
+        pos.append((-1.000000, 0.000000, 0.000000))
+        pos.append((0.000000, 1.000000, 0.000000))
+        pos.append((0.000000, 0.000000, 1.000000))
+        pos.append((0.000000, -1.000000, 0.000000))
+        pos.append((0.000000, 0.000000, -1.000000))
+        pos.append((0.000000, 1.000000, 0.000000))
+        pos.append((-1.000000, 0.000000, 0.000000))
+        pos.append((0.000000, 0.000000, 1.000000))
+        pos.append((1.000000, 0.000000, 0.000000))
+        pos.append((0.000000, 0.000000, -1.000000))
+        pos.append((-1.000000, 0.000000, 0.000000))
 
-    return create_shape([pos])
+        return self.create_shape([pos])
 
-def diamondCross():
-    """ diamondCross shape """
+    def diamondCross(self):
+        """ diamondCross shape """
 
-    pos = []
+        pos = []
 
-    pos.append( ( 0.000000, 0.000000, 0.000000 ) )
-    pos.append( ( 0.000000, 0.000000, -0.496386 ) )
-    pos.append( ( -0.248193, 0.000000, -0.744578 ) )
-    pos.append( ( 0.000000, 0.000000, -0.992771 ) )
-    pos.append( ( 0.248193, 0.000000, -0.744578 ) )
-    pos.append( ( 0.000000, 0.000000, -0.496386 ) )
-    pos.append( ( 0.000000, 0.000000, 0.000000 ) )
-    pos.append( ( 0.496386, 0.000000, 0.000000 ) )
-    pos.append( ( 0.744578, 0.000000, -0.248193 ) )
-    pos.append( ( 0.992771, 0.000000, 0.000000 ) )
-    pos.append( ( 0.744578, 0.000000, 0.248193 ) )
-    pos.append( ( 0.496386, 0.000000, 0.000000 ) )
-    pos.append( ( 0.000000, 0.000000, 0.000000 ) )
-    pos.append( ( 0.000000, 0.000000, 0.496386 ) )
-    pos.append( ( 0.248193, 0.000000, 0.744578 ) )
-    pos.append( ( 0.000000, 0.000000, 0.992771 ) )
-    pos.append( ( -0.248193, 0.000000, 0.744578 ) )
-    pos.append( ( 0.000000, 0.000000, 0.496386 ) )
-    pos.append( ( 0.000000, 0.000000, 0.000000 ) )
-    pos.append( ( -0.496386, 0.000000, 0.000000 ) )
-    pos.append( ( -0.744578, 0.000000, 0.248193 ) )
-    pos.append( ( -0.992771, 0.000000, 0.000000 ) )
-    pos.append( ( -0.744578, 0.000000, -0.248193 ) )
-    pos.append( ( -0.496386, 0.000000, 0.000000 ) )
-    pos.append( ( 0.000000, 0.000000, 0.000000 ) )
+        pos.append( ( 0.000000, 0.000000, 0.000000 ) )
+        pos.append( ( 0.000000, 0.000000, -0.496386 ) )
+        pos.append( ( -0.248193, 0.000000, -0.744578 ) )
+        pos.append( ( 0.000000, 0.000000, -0.992771 ) )
+        pos.append( ( 0.248193, 0.000000, -0.744578 ) )
+        pos.append( ( 0.000000, 0.000000, -0.496386 ) )
+        pos.append( ( 0.000000, 0.000000, 0.000000 ) )
+        pos.append( ( 0.496386, 0.000000, 0.000000 ) )
+        pos.append( ( 0.744578, 0.000000, -0.248193 ) )
+        pos.append( ( 0.992771, 0.000000, 0.000000 ) )
+        pos.append( ( 0.744578, 0.000000, 0.248193 ) )
+        pos.append( ( 0.496386, 0.000000, 0.000000 ) )
+        pos.append( ( 0.000000, 0.000000, 0.000000 ) )
+        pos.append( ( 0.000000, 0.000000, 0.496386 ) )
+        pos.append( ( 0.248193, 0.000000, 0.744578 ) )
+        pos.append( ( 0.000000, 0.000000, 0.992771 ) )
+        pos.append( ( -0.248193, 0.000000, 0.744578 ) )
+        pos.append( ( 0.000000, 0.000000, 0.496386 ) )
+        pos.append( ( 0.000000, 0.000000, 0.000000 ) )
+        pos.append( ( -0.496386, 0.000000, 0.000000 ) )
+        pos.append( ( -0.744578, 0.000000, 0.248193 ) )
+        pos.append( ( -0.992771, 0.000000, 0.000000 ) )
+        pos.append( ( -0.744578, 0.000000, -0.248193 ) )
+        pos.append( ( -0.496386, 0.000000, 0.000000 ) )
+        pos.append( ( 0.000000, 0.000000, 0.000000 ) )
 
-    return create_shape([pos])
+        return self.create_shape([pos])
 
-def COG():
-    """ COG shape """
+    def COG(self):
+        """ COG shape """
 
-    pos = []
+        pos = []
 
-    pos.append( ( -0.134942, 0.000000, -0.269883 ) )
-    pos.append( ( -0.134942, 0.000000, -0.404825 ) )
-    pos.append( ( -0.269883, 0.000000, -0.404825 ) )
-    pos.append( ( 0.000000, 0.000000, -0.674708 ) )
-    pos.append( ( 0.269883, 0.000000, -0.404825 ) )
-    pos.append( ( 0.134942, 0.000000, -0.404825 ) )
-    pos.append( ( 0.134942, 0.000000, -0.269883 ) )
-    pos.append( ( 0.269883, 0.000000, -0.134942 ) )
-    pos.append( ( 0.404825, 0.000000, -0.134942 ) )
-    pos.append( ( 0.404825, 0.000000, -0.269883 ) )
-    pos.append( ( 0.674708, 0.000000, 0.000000 ) )
-    pos.append( ( 0.404825, 0.000000, 0.269883 ) )
-    pos.append( ( 0.404825, 0.000000, 0.134942 ) )
-    pos.append( ( 0.269883, 0.000000, 0.134942 ) )
-    pos.append( ( 0.134942, 0.000000, 0.269883 ) )
-    pos.append( ( 0.134942, 0.000000, 0.404825 ) )
-    pos.append( ( 0.269883, 0.000000, 0.404825 ) )
-    pos.append( ( 0.000000, 0.000000, 0.674708 ) )
-    pos.append( ( -0.269883, 0.000000, 0.404825 ) )
-    pos.append( ( -0.134942, 0.000000, 0.404825 ) )
-    pos.append( ( -0.134942, 0.000000, 0.269883 ) )
-    pos.append( ( -0.269883, 0.000000, 0.134942 ) )
-    pos.append( ( -0.404825, 0.000000, 0.134942 ) )
-    pos.append( ( -0.404825, 0.000000, 0.269883 ) )
-    pos.append( ( -0.674708, 0.000000, 0.000000 ) )
-    pos.append( ( -0.404825, 0.000000, -0.269883 ) )
-    pos.append( ( -0.404825, 0.000000, -0.134942 ) )
-    pos.append( ( -0.269883, 0.000000, -0.134942 ) )
-    pos.append( ( -0.134942, 0.000000, -0.269883 ) )
+        pos.append( ( -0.134942, 0.000000, -0.269883 ) )
+        pos.append( ( -0.134942, 0.000000, -0.404825 ) )
+        pos.append( ( -0.269883, 0.000000, -0.404825 ) )
+        pos.append( ( 0.000000, 0.000000, -0.674708 ) )
+        pos.append( ( 0.269883, 0.000000, -0.404825 ) )
+        pos.append( ( 0.134942, 0.000000, -0.404825 ) )
+        pos.append( ( 0.134942, 0.000000, -0.269883 ) )
+        pos.append( ( 0.269883, 0.000000, -0.134942 ) )
+        pos.append( ( 0.404825, 0.000000, -0.134942 ) )
+        pos.append( ( 0.404825, 0.000000, -0.269883 ) )
+        pos.append( ( 0.674708, 0.000000, 0.000000 ) )
+        pos.append( ( 0.404825, 0.000000, 0.269883 ) )
+        pos.append( ( 0.404825, 0.000000, 0.134942 ) )
+        pos.append( ( 0.269883, 0.000000, 0.134942 ) )
+        pos.append( ( 0.134942, 0.000000, 0.269883 ) )
+        pos.append( ( 0.134942, 0.000000, 0.404825 ) )
+        pos.append( ( 0.269883, 0.000000, 0.404825 ) )
+        pos.append( ( 0.000000, 0.000000, 0.674708 ) )
+        pos.append( ( -0.269883, 0.000000, 0.404825 ) )
+        pos.append( ( -0.134942, 0.000000, 0.404825 ) )
+        pos.append( ( -0.134942, 0.000000, 0.269883 ) )
+        pos.append( ( -0.269883, 0.000000, 0.134942 ) )
+        pos.append( ( -0.404825, 0.000000, 0.134942 ) )
+        pos.append( ( -0.404825, 0.000000, 0.269883 ) )
+        pos.append( ( -0.674708, 0.000000, 0.000000 ) )
+        pos.append( ( -0.404825, 0.000000, -0.269883 ) )
+        pos.append( ( -0.404825, 0.000000, -0.134942 ) )
+        pos.append( ( -0.269883, 0.000000, -0.134942 ) )
+        pos.append( ( -0.134942, 0.000000, -0.269883 ) )
 
-    return create_shape([pos])
+        return self.create_shape([pos])
 
-def printCvPositions(curve):
-    """ print curve CVs positions for control function """
-    shapes = pm.listRelatives(curve, shapes=True)
+    def printCvPositions(self, curve):
+        """ print curve CVs positions for control function """
+        shapes = cmds.listRelatives(curve, shapes=True)
 
-    for i in shapes:
-        cvs = pm.ls(i + '.cv[*]', fl=True)
+        for i in shapes:
+            cvs = cmds.ls(i + '.cv[*]', fl=True)
 
-        pos_array = []
+            pos_array = []
 
-        print('#' * 20)
+            print('#' * 20)
 
-        for cv in cvs:
-            pos = pm.xform(cv, q=True, t=True, ws=True)
-            pos_array.append(pos)
-            print(f'pos.append( {tuple(pos)} )')
+            for cv in cvs:
+                pos = pm.xform(cv, q=True, t=True, ws=True)
+                pos_array.append(pos)
+                print(f'pos.append( {tuple(pos)} )')
 
-    return pos_array
+        return pos_array
 
 ''' 
 def shapes(shape):

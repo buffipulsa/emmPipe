@@ -1,9 +1,9 @@
 
 import maya.cmds as cmds
 
-from rig.controls import control_shapes
+from rig.controls.control_shapes import ControlShapes
 from rig.objects import object_utils as ou
-from rig.objects.object_data import DagNodeData, DependencyNodeData
+from rig.objects.object_data import DagNodeData
 
 
 class Control:
@@ -12,64 +12,43 @@ class Control:
         
         self._side = side
         self._name = name
-        self._shape = shape
         self._scale = scale
 
         self._ctrl_name  = None
-        self.index = 0
+        self._index = 0
 
         self._thickness = 1
         self._color = 'yellow'
+        
+        self._ctrl = ControlShapes(shape)
+        self._ctrl_data = DagNodeData(self._ctrl.name)
 
-        self.os_grp, self.ctrl, self.shapes = control_shapes.shapes(self._shape)
+        self._srt_offset = cmds.createNode('transform')
+        self._srt_offset_data = DagNodeData(self._srt_offset)
 
-        self._mark_as_control()
-        self._mark_side()
-        self._mark_part()
-        self._mark_control_index()
+        #self._mark_as_control()
+        #self._mark_side()
+        #self._mark_part()
+        #self._mark_control_index()
         
         self._rename()
 
         if self._side   == 'l': self.color = 'blue'
         elif self._side == 'r': self.color = 'red'
         else:                   self.color = 'yellow'
-        self.thickness = self._thickness
-
-        #self.c_objData = DagNodeData(self.ctrl)
+        #self.thickness = self._thickness
 
         # self.lock_visibility(True)
         # self.scale_ctrl(self.scale)
         # self.lock_transforms('scale')
-
-    def create(self):
-
-        self.os_grp, self.ctrl, self.shapes = control_shapes.shapes(self._shape)
-
-        self._mark_as_control()
-        self._mark_side()
-        self._mark_part()
-        self._mark_control_index()
-        
-        self._rename()
-
-        if self._side   == 'l': self.color = 'blue'
-        elif self._side == 'r': self.color = 'red'
-        else:                   self.color = 'yellow'
-        self.thickness = self._thickness
-
-        # self.lock_visibility(True)
-        # self.scale_ctrl(self.scale)
-        # self.lock_transforms('scale')
-
-        return self
     
     @property
     def m_obj(self):
-        return self.c_objData.m_obj
+        return self.ctrl_data.m_obj
 
     @property
     def dag_path(self):
-        return self.c_objData.dag_path
+        return self.ctrl_data.dag_path
 
     def match_transforms(self, obj=None, objType=None, coords=None, pos=True, rot=True, scale=False):
         """ This method matches controller translation and rotation to desired object.
@@ -106,10 +85,10 @@ class Control:
         if value in color_data:
             color = color_data[value]
 
-            for shape in self.shapes:
-                [cmds.setAttr(f'{shape}.overrideEnabled', 1) \
-                 for shape in self.shapes if not cmds.getAttr(f'{shape}.overrideEnabled')]
-                cmds.setAttr(f'{shape}.overrideColor', color)
+            for shape_fn in self._ctrl_data.shapes_fn:
+                if not cmds.getAttr(f'{shape_fn.fullPathName()}.overrideEnabled'):
+                    cmds.setAttr(f'{shape_fn.fullPathName()}.overrideEnabled', 1)
+                cmds.setAttr(f'{shape_fn.fullPathName()}.overrideColor', color)
         else:
             raise ValueError('Please provide a valid color name')
             
@@ -154,9 +133,9 @@ class Control:
 
     def _rename(self):
     
-        self.ctrl = cmds.rename(ou.node_with_attr(self.ctrl, 'isControl'), f'{self._name}_{self._side}_{str(self.index).zfill(2)}_ctrl')
-        self.os_grp = cmds.rename(self.os_grp, f'{self._name}_{self._side}_{str(self.index).zfill(2)}_srtBuffer')
-        self.shapes = [cmds.rename(shape, f'{self._name}_{self._side}_{str(self.index).zfill(2)}Shape') for shape in self.shapes]
+        cmds.rename(self._ctrl_data.transform_fn.fullPathName(), f'{self._name}_{self._side}_{str(self._index).zfill(2)}_ctrl')
+        cmds.rename(self._srt_offset_data.transform_fn.fullPathName(), f'{self._name}_{self._side}_{str(self._index).zfill(2)}_srtBuffer')
+        [cmds.rename(shape_fn.fullPathName(), f'{self._name}_{self._side}_{str(self._index).zfill(2)}Shape') for shape_fn in self._ctrl_data.shapes_fn]
 
     def extra_groups(self, *args):
 
