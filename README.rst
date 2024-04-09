@@ -17,10 +17,10 @@ emmPipe
 
 
 3D pipeline for freelance work.
-
+.
 
 * Free software: MIT license
-* Documentation: https://emmPipe.readthedocs.io.
+* Documentation: https://github.com/buffipulsa/emmPipe/wiki.
 
 
 Features
