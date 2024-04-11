@@ -29,20 +29,42 @@ class RigWidget(QtWidgets.QWidget):
         
     def add_widgets(self):
         
-        self.osseous_widget = OsseousWidget()
-
-        self.build_button = QtWidgets.QPushButton('Build')
+        self.import_model_button = QtWidgets.QPushButton('Import Model')
+        self.import_blueprint_button = QtWidgets.QPushButton('Import Blueprint')
+        #self.osseous_widget = OsseousWidget()
 
     def add_layouts(self):
         layout = QVBoxLayout(self)
         layout.setAlignment(QtCore.Qt.AlignTop)
         layout.setContentsMargins(0, 0, 0, 0)
         
-        layout.addWidget(self.osseous_widget)
-        layout.addWidget(self.build_button)
+        layout.addWidget(self.import_model_button)
+        layout.addWidget(self.import_blueprint_button)
+        #layout.addWidget(self.osseous_widget)
 
     def add_connections(self):
-        pass
+
+        for widget in self.children():
+            if isinstance(widget, QtWidgets.QPushButton):
+                widget.clicked.connect(self.update_project_path)
+
+        self.import_model_button.clicked.connect(self.import_model)
+        self.import_blueprint_button.clicked.connect(self.import_blueprint)
+
+    def update_project_path(self):
+        self.c_component.project_path = self.c_data.component_path
 
     def update_build_script_path(self):
         self.c_data.build_scripts_path = os.path.join(self.c_data.asset, 'python', 'rigBuild', 'build.py')
+
+    def import_model(self):
+        """
+        Imports the model component.
+        """
+        self.c_component.import_model_component()
+
+    def import_blueprint(self):
+        """
+        Imports the blueprint component.
+        """
+        self.c_component.import_blueprint_component()

@@ -85,6 +85,7 @@ class AssetWidget(QtWidgets.QWidget):
         Add signal-slot connections for the widget.
         """
         self.show_cbox.currentIndexChanged.connect(self.on_show_changed)
+        self.asset_cbox.currentIndexChanged.connect(self.on_asset_changed)
 
         self.browse_components_button.clicked.connect(self.browse_components)
 
@@ -93,6 +94,12 @@ class AssetWidget(QtWidgets.QWidget):
         Update the data paths when the show combobox selection changes.
         """
         self.c_data.path = os.path.join(self.c_show_model.path, self.show_cbox.currentText())
+        self.c_data.component_path = os.path.join(self.c_data.path, self.asset_cbox.currentText())
+
+    def on_asset_changed(self):
+        """
+        Update the data paths when the asset combobox selection changes.
+        """
         self.c_data.component_path = os.path.join(self.c_data.path, self.asset_cbox.currentText())
 
     def browse_components(self):
