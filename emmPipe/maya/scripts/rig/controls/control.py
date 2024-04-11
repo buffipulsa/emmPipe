@@ -1,9 +1,10 @@
 
 import maya.cmds as cmds
+import maya.api.OpenMaya as om
 
 from rig.controls.control_shapes import ControlShapes
 from rig.objects import object_utils as ou
-from rig.objects.object_data import DagNodeData
+from rig.objects.object_data import DagNodeData, DependencyNodeData
 
 
 class Control:
@@ -12,64 +13,54 @@ class Control:
         
         self._side = side
         self._name = name
+        self._shape_name = shape
         self._scale = scale
-
-        self._ctrl_name  = None
         self._index = 0
-
         self._thickness = 1
         self._color = 'yellow'
+
+    def create(self):
         
-        self._ctrl = ControlShapes(shape)
+        self._ctrl = ControlShapes(self._shape_name)
         self._ctrl_data = DagNodeData(self._ctrl.name)
 
         self._srt_offset = cmds.createNode('transform')
         self._srt_offset_data = DagNodeData(self._srt_offset)
 
-        #self._mark_as_control()
-        #self._mark_side()
-        #self._mark_part()
-        #self._mark_control_index()
-        
         self._rename()
 
         if self._side   == 'l': self.color = 'blue'
         elif self._side == 'r': self.color = 'red'
         else:                   self.color = 'yellow'
-        #self.thickness = self._thickness
+        
+        self.class_data = self._gather_class_data()
+        print(self.class_data)
+        InfoNode(self).create()
 
-        # self.lock_visibility(True)
-        # self.scale_ctrl(self.scale)
-        # self.lock_transforms('scale')
+        return self
     
+    def _gather_class_data(self):
+        
+        class_data = {}
+
+        vars_data = vars(self)
+        for var, value in vars_data.items():
+            print (var, value)
+            class_data[var] = {'value': value, 'type': type(value)}
+
+        return class_data
+
     @property
     def m_obj(self):
-        return self.ctrl_data.m_obj
+        return self._ctrl_data.m_obj
+    
+    @property
+    def dependnode_fn(self):
+        return self._ctrl_data.dependnode_fn
 
     @property
     def dag_path(self):
-        return self.ctrl_data.dag_path
-
-    def match_transforms(self, obj=None, objType=None, coords=None, pos=True, rot=True, scale=False):
-        """ This method matches controller translation and rotation to desired object.
-        Args:
-            obj (str): Object to match translates and rotates to.
-        """
-        obj = ou.node_with_attr(obj, objType)
-        if not coords and obj:
-            if cmds.objExists(obj):
-                cmds.matchTransform(self.os_grp,
-                                  obj,
-                                  position=pos,
-                                  rotation=rot,
-                                  scale=scale)
-            else:
-                raise ValueError('This object does not exists. Please specify an object to match transforms')
-
-        if coords and not obj:
-            cmds.xform(self.os_grp, translation=coords, worldSpace=True)
-        
-        return 
+        return self._ctrl_data.dag_path
     
     @property
     def color(self):
@@ -149,8 +140,71 @@ class Control:
             self.extra_groups.append(grp)
 
         return groups_data
-           
 
+    def match_transforms(self, obj=None, objType=None, coords=None, pos=True, rot=True, scale=False):
+        """ This method matches controller translation and rotation to desired object.
+        Args:
+            obj (str): Object to match translates and rotates to.
+        """
+        obj = ou.node_with_attr(obj, objType)
+        if not coords and obj:
+            if cmds.objExists(obj):
+                cmds.matchTransform(self.os_grp,
+                                  obj,
+                                  position=pos,
+                                  rotation=rot,
+                                  scale=scale)
+            else:
+                raise ValueError('This object does not exists. Please specify an object to match transforms')
+
+        if coords and not obj:
+            cmds.xform(self.os_grp, translation=coords, worldSpace=True)
+        
+        return 
+    
+class InfoNode:
+
+    def __init__(self, node_intance) -> None:
+
+        self._node = node_intance
+        self._network_node = None
+           
+    def create(self):
+
+        try:
+            self._network_node = cmds.listConnections(f'{self._node}.message')[0]
+        except:
+            pass
+        finally:
+            if not self._network_node:
+                self._network_node = cmds.createNode('network', name=f'{self._node.dependnode_fn.name()}_metaData')
+
+                self._create_attrs(self._network_node)
+        
+        return self
+
+    def _create_attrs(self, node):
+
+        node_data = DependencyNodeData(node)
+
+        message_attr_mobj = om.MFnMessageAttribute().create('node', 'node')
+        node_data.dependnode_fn.addAttribute(message_attr_mobj)
+
+        type_to_attr_fn = {
+                str: [om.MFnTypedAttribute, om.MFnData.kString, 'setString'],
+                int: [om.MFnNumericAttribute, om.MFnNumericData.kInt, 'setInt'],
+                float: [om.MFnNumericAttribute, om.MFnNumericData.kFloat, 'setFloat']
+                }
+
+        for attr_name, data in self._node.class_data.items():
+            if data['type'] in type_to_attr_fn:
+                attr_fn, data_fn, plug_function = type_to_attr_fn[data['type']]
+                
+                attr_mobj = attr_fn().create(attr_name, attr_name, data_fn)
+
+                node_data.dependnode_fn.addAttribute(attr_mobj)
+                set_attr_function = getattr(node_data.dependnode_fn.findPlug(attr_name, True), plug_function)
+                set_attr_function(data['value'])
 
 
 

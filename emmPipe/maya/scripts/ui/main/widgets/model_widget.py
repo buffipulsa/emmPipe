@@ -58,6 +58,7 @@ class ModelWidget(QtWidgets.QWidget):
         Imports the model component.
         """
         self.c_component.project_path = self.c_data.component_path
+        print(self.c_component.project_path)
         self.c_component.import_model_component()
 
     def open_model(self):

@@ -66,8 +66,11 @@ class DependencyNodeData:
         
         Raises a ValueError if the node is a DAG node, suggesting the use of the DagNodeData class instead.
         """
-        if self.selection.getDagPath(0).isValid():
-            raise ValueError(f'{self._dependnode_fn.name()} is a DAG node. Please use the DagNodeData class instead.')
+        try:
+            if self.selection.getDagPath(0).isValid():
+                raise ValueError(f'{self._dependnode_fn.name()} is a DAG node. Please use the DagNodeData class instead.')
+        except:
+            return False
 
     def _get_m_obj(self):
         """
@@ -259,7 +262,8 @@ class DagNodeData(DependencyNodeData):
             for i in range(self._dag_path.childCount()):
                 child_mobj = self._dag_path.child(i)
                 if child_mobj.hasFn(om.MFn.kShape) and not om.MFnDagNode(child_mobj).isIntermediateObject:
-                    self._shapes.append(child_mobj)
+                    shape_dag_path = om.MFnDagNode(child_mobj).getPath()
+                    self._shapes.append(shape_dag_path)
 
             return self._shapes
         else:        

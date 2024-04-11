@@ -88,6 +88,7 @@ class Component:
         Returns:
             None
         """
+        print(self.get_file_path('model'))
         cmds.file(self.get_file_path('model'), i=True)
 
         print('#' * 50)
@@ -495,8 +496,10 @@ class Component:
         """
         component_path = self.get_component_path(component)
         full_directory = os.listdir(component_path)
+        print(component_path)
 
         for file in full_directory:
+            print(file)
             if not file.startswith('{}_'.format(component)) and not file.endswith('.ma'):
                 full_directory.remove(file)
 

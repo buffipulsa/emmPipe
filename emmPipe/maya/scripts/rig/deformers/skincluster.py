@@ -1,6 +1,8 @@
 
 import os
 import json
+import pickle
+import gzip
 
 import maya.api.OpenMaya as om
 import maya.api.OpenMayaAnim as oma
@@ -42,6 +44,16 @@ class SkinclusterData(DagNodeData):
         """
         attr_value = cmds.getAttr('{}.{}'.format(self.skincluster, attr))
         return attr_value
+
+    @property
+    def skincluster_name(self):
+        """
+        Get the name of the skincluster node.
+
+        Returns:
+            str: The name of the skincluster node.
+        """
+        return self._skincluster
 
     @property
     def skincluster(self):
@@ -131,7 +143,7 @@ class SkinclusterData(DagNodeData):
         Returns:
             list: The skin weights for the vertex component.
         """
-        weights, _ = self.skincluster_fn.getWeights(self.shape, self.vtx_component)
+        weights, _ = self.skincluster_fn.getWeights(self.shapes[0], self.vtx_component[0])
         return weights
 
     @property
@@ -142,7 +154,7 @@ class SkinclusterData(DagNodeData):
         Returns:
             blendWeights (list): List of blend weights.
         """
-        blendWeights = self.skincluster_fn.getBlendWeights(self.shape, self.vtx_component)
+        blendWeights = self.skincluster_fn.getBlendWeights(self.shapes[0], self.vtx_component[0])
 
         return blendWeights
 
@@ -239,12 +251,12 @@ def save_skincluster_data(node, path):
     if not os.path.exists('{}/skincluster'.format(path)):
         os.makedirs('{}/skincluster'.format(path))
 
-    full_path = '{}/skincluster/{}.json'.format(path, node)
+    full_path = '{}/skincluster/{}.pckl.gzip'.format(path, node)
 
     c_skincluster_data = SkinclusterData(node)
 
     data = {'skincluster': c_skincluster_data.skincluster,
-            'skincluster_name': c_skincluster_data.skincluster_name,
+            # 'skincluster_name': c_skincluster_data.skincluster_name,
             'influence_names': c_skincluster_data.influence_names,
             'influence_indices': list(c_skincluster_data.influence_indices),
             'bind_pre_matrix_values': c_skincluster_data.bind_pre_matrix_values,
@@ -257,9 +269,8 @@ def save_skincluster_data(node, path):
             'normalize_weights': c_skincluster_data.normalize_weights,
             'deform_user_normals': c_skincluster_data.deform_user_normals}
 
-    file_obj = open(full_path, mode='w')
-    json.dump(data, file_obj)
-    file_obj.close()
+    with gzip.open(full_path, 'wb') as file_obj:
+        pickle.dump(data, file_obj)
 
     return
 
@@ -274,44 +285,44 @@ def load_skincluster_data(node, path):
     Returns:
         None
     """
-    full_path = os.path.join(path, '{}.json'.format(node))
+    skin_name = 'test_skin'
+    full_path = os.path.join(path, '{}.pckl.gzip'.format(node))
 
-    file_obj = open(full_path, mode='rb')
-    file_obj_str = file_obj.read()
-    data = json.loads(file_obj_str)
-    file_obj.close()
+    with gzip.open(full_path, 'rb') as file_obj:
+        data = pickle.load(file_obj)
 
-    for joint in data['influenceNames']:
+    for joint in data['influence_names']:
         if not cmds.objExists(joint):
             cmds.createNode('joint', name=joint, skipSelect=True)
 
-    if data.get('bindPreMatrixInputs'):
-        for joint in data['bindPreMatrixInputs']:
+    if data.get('bind_pre_matrix_inputs'):
+        for joint in data['bind_pre_matrix_inputs']:
             if not cmds.objExists(joint):
                 cmds.createNode('joint', name=joint, skipSelect=True)
 
-    cmds.skinCluster(data['influenceNames'], node, name=data['skinclusterName'], tsb=True)
+    cmds.skinCluster(data['influence_names'], node, name=data['skincluster'], tsb=True)
 
     c_skincluster_data = SkinclusterData(node)
 
-    cmds.setAttr('{}.envelope'.format(data['skinclusterName']), data['envelope'])
-    cmds.setAttr('{}.skinningMethod'.format(data['skinclusterName']), data['skinningMethod'])
-    cmds.setAttr('{}.useComponents'.format(data['skinclusterName']), data['useComponents'])
-    cmds.setAttr('{}.normalizeWeights'.format(data['skinclusterName']), data['normalizeWeights'])
-    cmds.setAttr('{}.deformUserNormals'.format(data['skinclusterName']), data['deformUserNormals'])
+    cmds.setAttr('{}.envelope'.format(data['skincluster']), data['envelope'])
+    cmds.setAttr('{}.skinningMethod'.format(data['skincluster']), data['skinning_method'])
+    cmds.setAttr('{}.useComponents'.format(data['skincluster']), data['use_components'])
+    cmds.setAttr('{}.normalizeWeights'.format(data['skincluster']), data['normalize_weights'])
+    cmds.setAttr('{}.deformUserNormals'.format(data['skincluster']), data['deform_user_normals'])
 
-    c_skincluster_data.skinclusterFn.setWeights(c_skincluster_data.shape,
-                                                c_skincluster_data.vtx_component,
-                                                om.MIntArray(data['influenceIndices']),
+    print(c_skincluster_data.shapes[0])
+    c_skincluster_data.skincluster_fn.setWeights(c_skincluster_data.shapes[0],
+                                                c_skincluster_data.vtx_component[0],
+                                                om.MIntArray(data['influence_indices']),
                                                 om.MDoubleArray(data['weights']),
                                                 True,
                                                 False)
 
-    c_skincluster_data.skinclusterFn.setBlendWeights(c_skincluster_data.shape,
-                                                     c_skincluster_data.vtx_component,
-                                                     om.MDoubleArray(data['blendWeights']))
+    c_skincluster_data.skincluster_fn.setBlendWeights(c_skincluster_data.shapes[0],
+                                                     c_skincluster_data.vtx_component[0],
+                                                     om.MDoubleArray(data['blend_weights']))
 
-    cmds.skinPercent(data['skinclusterName'], cmds.listRelatives(node, shapes=True, noIntermediate=True)[0],
+    cmds.skinPercent(data['skincluster'], cmds.listRelatives(node, shapes=True, noIntermediate=True)[0],
                      normalize=True)
 
     return

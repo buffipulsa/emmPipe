@@ -302,7 +302,7 @@ class ControlShapes:
             print('#' * 20)
 
             for cv in cvs:
-                pos = pm.xform(cv, q=True, t=True, ws=True)
+                pos = cmds.xform(cv, q=True, t=True, ws=True)
                 pos_array.append(pos)
                 print(f'pos.append( {tuple(pos)} )')
 
