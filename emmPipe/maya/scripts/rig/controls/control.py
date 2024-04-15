@@ -35,7 +35,7 @@ class Control:
         
         self.class_data = self._gather_class_data()
         print(self.class_data)
-        InfoNode(self).create()
+        #InfoNode(self).create()
 
         return self
     

@@ -27,11 +27,12 @@ class DependencyNodeData:
         """
         if not node:
             raise TypeError('No node assigned')
-
+        
         self.selection = om.MSelectionList()
         self.selection.add(node)
 
         self._m_obj = self._get_m_obj()
+        
         self._dependnode_fn = self._get_dependnode_fn()
 
         self._check_if_dag_or_depend_node()

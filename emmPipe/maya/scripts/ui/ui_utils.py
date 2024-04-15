@@ -98,6 +98,7 @@ class DockableUI(QtWidgets.QWidget):
             module_name = cls.module_name_override
 
         ui_script = "from {0} import {1}\n{1}.display()".format(module_name, cls.__name__)
+        print(ui_script)
         return ui_script
 
     def __init__(self):

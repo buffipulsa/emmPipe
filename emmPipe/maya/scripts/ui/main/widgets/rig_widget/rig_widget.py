@@ -7,6 +7,7 @@ from PySide2.QtWidgets import QVBoxLayout
 import maya.cmds as cmds
 
 from ui.main.widgets.osseousWidget import OsseousWidget
+from ui.main.widgets.rig_widget.modules_widget import ModulesWidget
 
 class RigWidget(QtWidgets.QWidget):
     """
@@ -31,7 +32,10 @@ class RigWidget(QtWidgets.QWidget):
         
         self.import_model_button = QtWidgets.QPushButton('Import Model')
         self.import_blueprint_button = QtWidgets.QPushButton('Import Blueprint')
-        #self.osseous_widget = OsseousWidget()
+
+        self.modules_widget_button = QtWidgets.QPushButton('Modules')
+
+        # self.module_widget = ModulesWidget(self.parent())
 
     def add_layouts(self):
         layout = QVBoxLayout(self)
@@ -40,6 +44,7 @@ class RigWidget(QtWidgets.QWidget):
         
         layout.addWidget(self.import_model_button)
         layout.addWidget(self.import_blueprint_button)
+        layout.addWidget(self.modules_widget_button)
         #layout.addWidget(self.osseous_widget)
 
     def add_connections(self):
@@ -50,6 +55,7 @@ class RigWidget(QtWidgets.QWidget):
 
         self.import_model_button.clicked.connect(self.import_model)
         self.import_blueprint_button.clicked.connect(self.import_blueprint)
+        self.modules_widget_button.clicked.connect(self.show_modules_widget)
 
     def update_project_path(self):
         self.c_component.project_path = self.c_data.component_path
@@ -68,3 +74,13 @@ class RigWidget(QtWidgets.QWidget):
         Imports the blueprint component.
         """
         self.c_component.import_blueprint_component()
+
+    def show_modules_widget(self):
+
+        try:
+            self.module_widget.close()
+            self.module_widget.deleteLater()
+        except:
+            pass
+        self.module_widget = ModulesWidget(self)
+        self.module_widget.show()

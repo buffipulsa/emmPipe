@@ -11,7 +11,7 @@ from ui.ui_path_model import UIPathModel
 
 from .widgets.asset_widget import AssetWidget
 from .widgets.model_widget import ModelWidget
-from .widgets.rig_widget import RigWidget
+from .widgets.rig_widget.rig_widget import RigWidget
 
 from rig.component import component
 
