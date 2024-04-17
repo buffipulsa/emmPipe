@@ -1,10 +1,14 @@
 import maya.cmds as cmds
 import maya.api.OpenMaya as om
 
+from dev.utils import convert_list_to_str, convert_str_to_list
+
 from rig.objects.object_data import DagNodeData, DependencyNodeData
 from rig.objects.object_utils import MetaNode
 
-class ModuleBase:
+class RigModule:
+
+    data = {}
 
     def __init__(self, name) -> None:
         
@@ -21,14 +25,23 @@ class ModuleBase:
         self._orient_constraints = None
         self._scale_constraints = None
 
-        self.data = None
+        self._meta_node = None
 
     def create(self):
 
         self.initialize_modules()
         self.data = self.create_meta_data()
+        self.create_meta_node()
 
         return self
+
+    @property
+    def meta_node(self):
+        return self._meta_node
+    
+    @meta_node.setter
+    def meta_node(self, value):
+        self._meta_node = value
 
     @property
     def name(self):
@@ -151,7 +164,8 @@ class ModuleBase:
         data = {}
         data['class_module'] = str(self.__class__.__module__)
         data['class_name'] = str(self.__class__.__name__)
-        data['name'] = self.name
+        data['parameters'] = convert_list_to_str([self.name])
+        
         data['module'] = self.module.dag_path
         data['systems'] = self.systems.dag_path
         data['constraints'] = self.constraints.dag_path
@@ -163,10 +177,30 @@ class ModuleBase:
         data['orient_constraints'] = self.orient_constraints.dag_path
         data['scale_constraints'] = self.scale_constraints.dag_path
 
-        
-        self.meta_node = MetaNode(self.name, data)
-
         return data
+    
+    def create_meta_node(self):
+
+        self._meta_node = MetaNode(self.name, self.data).name
+
+    @classmethod
+    def from_data(cls, meta_node, data):
+
+        instance = cls(*convert_str_to_list(data['parameters']))
+        instance.meta_node = meta_node
+        
+        instance.module = DagNodeData(data['module'])
+        instance.systems = DagNodeData(data['systems'])
+        instance.joints = DagNodeData(data['joints'])
+        instance.fk = DagNodeData(data['fk'])
+        instance.ik = DagNodeData(data['ik'])
+        instance.constraints = DagNodeData(data['constraints'])
+        instance.par_constraints = DagNodeData(data['par_constraints'])
+        instance.point_constraints = DagNodeData(data['point_constraints'])
+        instance.orient_constraints = DagNodeData(data['orient_constraints'])
+        instance.scale_constraints = DagNodeData(data['scale_constraints'])
+
+        return instance
 
 
 class SerializeMetaNode:
@@ -195,10 +229,13 @@ class SerializeMetaNode:
             
             for attr, attr_fn in zip(attrs_mobj, attrs_fn):
                 attr_name = self.get_attribute_name(attr)
+   
                 if attr_fn == 'kMessageAttribute':
                     self._data[attr_name] = self.serialize_message_attr(attr)
                 if attr_fn == 'kTypedAttribute':
                     self._data[attr_name] = self.serialize_typed_attr(attr)
+                if attr_fn == 'kNumericAttribute':
+                    self._data[attr_name] = self.serialize_numeric_attr(attr)
 
         def get_attribute_name(self, attr):
             return self.meta_node.dependnode_fn.findPlug(attr, True).partialName()
@@ -217,12 +254,20 @@ class SerializeMetaNode:
             string_plug = self.meta_node.dependnode_fn.findPlug(attr, True)
  
             return string_plug.asString()
+    
+        def serialize_numeric_attr(self, attr):
+                
+            numeric_plug = self.meta_node.dependnode_fn.findPlug(attr, True)
+            
+            return numeric_plug.asFloat()
         
 
 class RebuildObject(SerializeMetaNode):
 
     def __init__(self, meta_node) -> None:
         super().__init__(meta_node)
+        
+        self.meta_node = meta_node
 
         self._class = self._get_class()
 
@@ -238,21 +283,7 @@ class RebuildObject(SerializeMetaNode):
         return class_
     
     def rebuild(self):
-        
-        if self._class == ModuleBase:
-            
-            class_instance = self._class(self.data['name'])
 
-            class_instance.module = DagNodeData(self.data['module'])
-            class_instance.systems = DagNodeData(self.data['systems'])
-            class_instance.joints = DagNodeData(self.data['joints'])
-            class_instance.fk = DagNodeData(self.data['fk'])
-            class_instance.ik = DagNodeData(self.data['ik'])
-            class_instance.constraints = DagNodeData(self.data['constraints'])
-            class_instance.par_constraints = DagNodeData(self.data['par_constraints'])
-            class_instance.point_constraints = DagNodeData(self.data['point_constraints'])
-            class_instance.orient_constraints = DagNodeData(self.data['orient_constraints'])
-            class_instance.scale_constraints = DagNodeData(self.data['scale_constraints'])
+        class_instance = self._class.from_data(self.meta_node, self.data)
             
-        
         return class_instance

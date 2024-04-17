@@ -60,3 +60,25 @@ def create_reload_shelf_button(shelf_name="reloadShelf", button_name="reloadButt
 
     # set button to run python
     mel.eval('global string $gShelfTopLevel; shelfButton -edit -commandLanguage python $gShelfTopLevel|reloadShelf|reloadButton;')
+
+def convert_list_to_str(list_to_convert):
+    """
+    Converts a list to a string
+    """
+    if len(list_to_convert) < 1:
+        raise ValueError('List is empty.')
+    elif len(list_to_convert) == 1:
+        return f"{list_to_convert[0]}"
+    else:
+        return ','.join([f"{item}" for item in list_to_convert])
+
+def convert_str_to_list(str_to_convert):
+    """
+    Converts a string to a list.
+    """
+    if len(str_to_convert) < 1:
+        raise ValueError('String is empty.')
+    elif not ',' in str_to_convert:
+        return [str_to_convert]
+    else:
+        return str_to_convert.split(',')

@@ -2,53 +2,57 @@
 import maya.cmds as cmds
 import maya.api.OpenMaya as om
 
+from dev.utils import convert_list_to_str, convert_str_to_list
+
 from rig.controls.control_shapes import ControlShapes
 from rig.objects import object_utils as ou
 from rig.objects.object_data import DagNodeData, DependencyNodeData
+from rig.modules.base import MetaNode
 
 
 class Control:
 
-    def __init__(self, side, name, shape, scale) -> None:
+    def __init__(self, side, name, shape) -> None:
         
         self._side = side
         self._name = name
         self._shape_name = shape
-        self._scale = scale
+
+        self._scale = 1.0
         self._index = 0
-        self._thickness = 1
+        self._thickness = 1.0
         self._color = 'yellow'
+        
+        self._shapes = None
+        self._ctrl = None
+        self._srt_offset = None
+        self._ctrl_data = None
+        self._srt_offset_data = None
+
+        self._meta_node = None
 
     def create(self):
         
-        self._ctrl = ControlShapes(self._shape_name)
-        self._ctrl_data = DagNodeData(self._ctrl.name)
-
+        self._ctrl = ControlShapes(self._shape_name).create()
         self._srt_offset = cmds.createNode('transform')
+
+        self._ctrl_data = DagNodeData(self._ctrl.name)
         self._srt_offset_data = DagNodeData(self._srt_offset)
 
+        cmds.parent(self._ctrl_data.dag_path, self._srt_offset_data.dag_path)
+
+        self._shapes = self._ctrl_data.shapes
+
         self._rename()
+        
+        self.data = self.create_meta_data()
+        self.create_meta_node()
 
         if self._side   == 'l': self.color = 'blue'
         elif self._side == 'r': self.color = 'red'
         else:                   self.color = 'yellow'
-        
-        self.class_data = self._gather_class_data()
-        print(self.class_data)
-        #InfoNode(self).create()
 
         return self
-    
-    def _gather_class_data(self):
-        
-        class_data = {}
-
-        vars_data = vars(self)
-        for var, value in vars_data.items():
-            print (var, value)
-            class_data[var] = {'value': value, 'type': type(value)}
-
-        return class_data
 
     @property
     def m_obj(self):
@@ -63,6 +67,22 @@ class Control:
         return self._ctrl_data.dag_path
     
     @property
+    def meta_node(self):
+        return self._meta_node
+    
+    @meta_node.setter
+    def meta_node(self, value):
+        self._meta_node = value
+
+    @property
+    def control(self):
+        return self._ctrl_data
+    
+    @control.setter
+    def control(self, value):
+        self._ctrl_data = value
+
+    @property
     def color(self):
         return self._color
     
@@ -76,10 +96,19 @@ class Control:
         if value in color_data:
             color = color_data[value]
 
-            for shape_fn in self._ctrl_data.shapes_fn:
-                if not cmds.getAttr(f'{shape_fn.fullPathName()}.overrideEnabled'):
-                    cmds.setAttr(f'{shape_fn.fullPathName()}.overrideEnabled', 1)
-                cmds.setAttr(f'{shape_fn.fullPathName()}.overrideColor', color)
+            if hasattr(self, '_ctrl_data'):
+                shapes = [shape.fullPathName() for shape in self._ctrl_data.shapes]
+            else: 
+                shapes =  [self.data[key].fullPathName() for key in self.data.keys() if key.startswith('shapes_') and key[-1].isdigit()]
+
+            for shape in shapes:
+                if not cmds.getAttr(f'{shape}.overrideEnabled'):
+                    cmds.setAttr(f'{shape}.overrideEnabled', 1)
+                cmds.setAttr(f'{shape}.overrideColor', color)
+            
+            if hasattr(self, 'meta_node'):
+                cmds.setAttr(f'{self.meta_node}.color', lock=False)
+                cmds.setAttr(f'{self.meta_node}.color', value, type='string', lock=True)
         else:
             raise ValueError('Please provide a valid color name')
             
@@ -91,36 +120,18 @@ class Control:
     
     @thickness.setter
     def thickness(self, value):
-        [cmds.setAttr(f'{shape}.lineWidth', value) for shape in self.shapes]
-
-    def _mark_as_control(self):
-
-        cmds.addAttr(self.ctrl, longName="isControl", attributeType="bool", defaultValue=True)
-        cmds.setAttr(f'{self.ctrl}.isControl', lock=True, keyable=False)
-    
-    def _mark_side(self):
-            
-        cmds.addAttr(self.ctrl, longName='controlSide', dataType='string')
-        cmds.setAttr(f'{self.ctrl}.controlSide', self._side, type='string')
-
-    def _mark_part(self):
-            
-        cmds.addAttr(self.ctrl, longName='controlPart', dataType='string')
-        cmds.setAttr(f'{self.ctrl}.controlPart', self._name, type='string')
-
-    def _mark_control_index(self):
+        if hasattr(self, '_ctrl_data'):
+            shapes = [shape.fullPathName() for shape in self._ctrl_data.shapes]
+        else: 
+            shapes =  [self.data[key].fullPathName() for key in self.data.keys() if key.startswith('shapes_') and key[-1].isdigit()]
         
-        cmds.addAttr(self.ctrl, longName='controlIndex', attributeType='long')
+        [cmds.setAttr(f'{shape}.lineWidth', value) for shape in shapes]
 
-        ctrls_in_scene = ou.nodes_with_attr('isControl')
+        self._thickness = value
 
-        indexes = [int(cmds.getAttr(f'{ctrl}.controlIndex')) for ctrl in ctrls_in_scene \
-                   if cmds.getAttr(f'{ctrl}.controlPart') == self._name \
-                    and cmds.getAttr(f'{ctrl}.controlSide') == self._side]
-        
-        if len(indexes) > 1:
-            self.index = max(indexes) + 1
-            cmds.setAttr(f'{self.ctrl}.controlIndex', self.index)
+        if hasattr(self, 'meta_node'):
+            cmds.setAttr(f'{self.meta_node}.thickness', lock=False)
+            cmds.setAttr(f'{self.meta_node}.thickness', value, lock=True)
 
     def _rename(self):
     
@@ -160,51 +171,44 @@ class Control:
         if coords and not obj:
             cmds.xform(self.os_grp, translation=coords, worldSpace=True)
         
-        return 
+        return
     
-class InfoNode:
-
-    def __init__(self, node_intance) -> None:
-
-        self._node = node_intance
-        self._network_node = None
-           
-    def create(self):
-
-        try:
-            self._network_node = cmds.listConnections(f'{self._node}.message')[0]
-        except:
-            pass
-        finally:
-            if not self._network_node:
-                self._network_node = cmds.createNode('network', name=f'{self._node.dependnode_fn.name()}_metaData')
-
-                self._create_attrs(self._network_node)
+    def create_meta_data(self):
         
-        return self
+        data = {}
+        data['class_module'] = str(self.__class__.__module__)
+        data['class_name'] = str(self.__class__.__name__)
+        data['parameters'] = convert_list_to_str([self._side,self._name,self._shape_name])
+        
+        data['control'] = self._ctrl_data.dag_path
+        data['srt_offset'] = self._srt_offset_data.dag_path
+        data['shapes'] = self._ctrl_data.shapes
+        data['side'] = self._side
+        data['name'] = self._name
+        data['shape'] = self._shape_name
+        data['scale'] = self._scale
+        data['index'] = self._index
+        data['thickness'] = self._thickness
+        data['color'] = self._color
 
-    def _create_attrs(self, node):
+        return data
+    
+    def create_meta_node(self):
 
-        node_data = DependencyNodeData(node)
+        self._meta_node = MetaNode(self._name, self.data).name
 
-        message_attr_mobj = om.MFnMessageAttribute().create('node', 'node')
-        node_data.dependnode_fn.addAttribute(message_attr_mobj)
+    @classmethod
+    def from_data(cls, meta_node, data):
 
-        type_to_attr_fn = {
-                str: [om.MFnTypedAttribute, om.MFnData.kString, 'setString'],
-                int: [om.MFnNumericAttribute, om.MFnNumericData.kInt, 'setInt'],
-                float: [om.MFnNumericAttribute, om.MFnNumericData.kFloat, 'setFloat']
-                }
+        instance = cls(*convert_str_to_list(data['parameters']))
+        instance.meta_node = meta_node
+        
+        instance.control = DagNodeData(data['control'])
+        instance.thickness = float(data['thickness'])
+        instance.color = data['color']
 
-        for attr_name, data in self._node.class_data.items():
-            if data['type'] in type_to_attr_fn:
-                attr_fn, data_fn, plug_function = type_to_attr_fn[data['type']]
-                
-                attr_mobj = attr_fn().create(attr_name, attr_name, data_fn)
-
-                node_data.dependnode_fn.addAttribute(attr_mobj)
-                set_attr_function = getattr(node_data.dependnode_fn.findPlug(attr_name, True), plug_function)
-                set_attr_function(data['value'])
+        return instance
+    
 
 
 

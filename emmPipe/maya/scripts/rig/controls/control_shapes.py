@@ -8,15 +8,22 @@ class ControlShapes:
 
     def __init__(self, shape):
 
-        if shape in self.SHAPES:
-            shape_method = getattr(__class__, shape)
-            self._ctrl = shape_method(self)
+        self._shape = shape
+        self._name = None
+
+    def create(self):
+        
+        if self._shape in self.SHAPES:
+            shape_method = getattr(__class__, self._shape)
+            self._name = shape_method(self)
         else:
             raise ValueError(f'Please pick a control shape. Available shapes: {self.SHAPES}')
+        
+        return self
 
     @property
     def name(self):
-        return self._ctrl
+        return self._name
 
     def create_shape(self, positions):
 

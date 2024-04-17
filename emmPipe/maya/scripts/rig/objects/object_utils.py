@@ -2,6 +2,8 @@
 import maya.cmds as cmds
 import maya.api.OpenMaya as om
 
+from dev.utils import convert_list_to_str, convert_str_to_list
+
 from rig.objects.object_data import DependencyNodeData
 
 def node_with_attr(node, attr):
@@ -25,10 +27,10 @@ class MetaNode:
 
     def __init__(self, name, data) -> None:
 
-        self.name = name
+        self._name = name
         self.data = data
 
-        self.meta_node = cmds.createNode('network', name=f'{self.name}_metaData')
+        self.meta_node = cmds.createNode('network', name=f'{self._name}_metaData')
 
         self._create_attrs()
 
@@ -39,7 +41,7 @@ class MetaNode:
         type_to_attr_fn = {
                 str: [om.MFnTypedAttribute, om.MFnData.kString, 'setString'],
                 int: [om.MFnNumericAttribute, om.MFnNumericData.kInt, 'setInt'],
-                float: [om.MFnNumericAttribute, om.MFnNumericData.kFloat, 'setFloat']
+                float: [om.MFnNumericAttribute, om.MFnNumericData.kFloat, 'setFloat'],
                 }
 
         for attr_name, data in self.data.items():
@@ -56,9 +58,28 @@ class MetaNode:
                 cmds.setAttr(f'{self.meta_node}.{attr_name}', lock=True)
 
             else:
-                message_attr_mobj = om.MFnMessageAttribute().create(attr_name, attr_name)
-                node_data.dependnode_fn.addAttribute(message_attr_mobj)
+                if type(data) == list:
+                    compound_attr = om.MFnCompoundAttribute()
+                    compound_attr_mobj = compound_attr.create(attr_name, attr_name)
+                    
+                    for i, item in enumerate(data):
+                        message_attr_mobj = om.MFnMessageAttribute().create(f'{attr_name}_{i}', f'{attr_name}_{i}')
+                        compound_attr.addChild(message_attr_mobj)
+                        
+                        # cmds.connectAttr(f'{item.fullPathName()}.message', f'{self.meta_node}.{attr_name}.{attr_name}_{i}')
 
-                cmds.connectAttr(f'{data.fullPathName()}.message', f'{self.meta_node}.{attr_name}')
+                    node_data.dependnode_fn.addAttribute(compound_attr_mobj)
 
+                    for i, item in enumerate(data):
+                        cmds.connectAttr(f'{item.fullPathName()}.message', f'{self.meta_node}.{attr_name}_{i}')
+
+                else:
+                    message_attr_mobj = om.MFnMessageAttribute().create(attr_name, attr_name)
+                    node_data.dependnode_fn.addAttribute(message_attr_mobj)
+
+                    cmds.connectAttr(f'{data.fullPathName()}.message', f'{self.meta_node}.{attr_name}')
+
+    @property
+    def name(self):
+        return self.meta_node
 
