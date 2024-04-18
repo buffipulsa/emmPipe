@@ -3,10 +3,11 @@ import maya.api.OpenMaya as om
 
 from dev.utils import convert_list_to_str, convert_str_to_list
 
-from rig.objects.object_data import DagNodeData, DependencyNodeData
-from rig.objects.object_utils import MetaNode
+from rig.objects.object_data import DagNodeData
+from rig.objects.object_data import MetaNode
+from rig.objects.base_object import BaseObject
 
-class RigModule:
+class RigModule(BaseObject):
 
     data = {}
 
@@ -160,130 +161,38 @@ class RigModule:
         return module
     
     def create_meta_data(self):
+        super().create_meta_data()
         
-        data = {}
-        data['class_module'] = str(self.__class__.__module__)
-        data['class_name'] = str(self.__class__.__name__)
-        data['parameters'] = convert_list_to_str([self.name])
+        self.data['parameters'] = convert_list_to_str([self.name])
         
-        data['module'] = self.module.dag_path
-        data['systems'] = self.systems.dag_path
-        data['constraints'] = self.constraints.dag_path
-        data['joints'] = self.joints.dag_path
-        data['fk'] = self.fk.dag_path
-        data['ik'] = self.ik.dag_path
-        data['par_constraints'] = self.par_constraints.dag_path
-        data['point_constraints'] = self.point_constraints.dag_path
-        data['orient_constraints'] = self.orient_constraints.dag_path
-        data['scale_constraints'] = self.scale_constraints.dag_path
+        self.data['module'] = self.module.dag_path
+        self.data['systems'] = self.systems.dag_path
+        self.data['constraints'] = self.constraints.dag_path
+        self.data['joints'] = self.joints.dag_path
+        self.data['fk'] = self.fk.dag_path
+        self.data['ik'] = self.ik.dag_path
+        self.data['par_constraints'] = self.par_constraints.dag_path
+        self.data['point_constraints'] = self.point_constraints.dag_path
+        self.data['orient_constraints'] = self.orient_constraints.dag_path
+        self.data['scale_constraints'] = self.scale_constraints.dag_path
 
-        return data
+        return self.data
     
-    def create_meta_node(self):
-
-        self._meta_node = MetaNode(self.name, self.data).name
 
     @classmethod
     def from_data(cls, meta_node, data):
-
-        instance = cls(*convert_str_to_list(data['parameters']))
-        instance.meta_node = meta_node
+        super().from_data(meta_node, data)
         
-        instance.module = DagNodeData(data['module'])
-        instance.systems = DagNodeData(data['systems'])
-        instance.joints = DagNodeData(data['joints'])
-        instance.fk = DagNodeData(data['fk'])
-        instance.ik = DagNodeData(data['ik'])
-        instance.constraints = DagNodeData(data['constraints'])
-        instance.par_constraints = DagNodeData(data['par_constraints'])
-        instance.point_constraints = DagNodeData(data['point_constraints'])
-        instance.orient_constraints = DagNodeData(data['orient_constraints'])
-        instance.scale_constraints = DagNodeData(data['scale_constraints'])
+        cls.instance.module = DagNodeData(data['module'])
+        cls.instance.systems = DagNodeData(data['systems'])
+        cls.instance.joints = DagNodeData(data['joints'])
+        cls.instance.fk = DagNodeData(data['fk'])
+        cls.instance.ik = DagNodeData(data['ik'])
+        cls.instance.constraints = DagNodeData(data['constraints'])
+        cls.instance.par_constraints = DagNodeData(data['par_constraints'])
+        cls.instance.point_constraints = DagNodeData(data['point_constraints'])
+        cls.instance.orient_constraints = DagNodeData(data['orient_constraints'])
+        cls.instance.scale_constraints = DagNodeData(data['scale_constraints'])
 
-        return instance
+        return cls.instance
 
-
-class SerializeMetaNode:
-    
-        ATTR_SKIPTS = ['message','caching','frozen','isHistoricallyInteresting',
-                        'nodeState','binMembership','affects','affectedBy']
-
-        def __init__(self, meta_node) -> None:
-            
-            self.meta_node = DependencyNodeData(meta_node)
-
-            self._data = {}
-            
-            self.seriazlie_data()
-
-        @property
-        def data(self):
-            return self._data
-    
-        def seriazlie_data(self):
-            
-            attrs_mobj = [self.meta_node.dependnode_fn.attribute(attr) for attr in cmds.listAttr(self.meta_node.dependnode_fn.absoluteName())\
-                      if attr not in self.ATTR_SKIPTS]
-            
-            attrs_fn = [attr.apiTypeStr for attr in attrs_mobj]
-            
-            for attr, attr_fn in zip(attrs_mobj, attrs_fn):
-                attr_name = self.get_attribute_name(attr)
-   
-                if attr_fn == 'kMessageAttribute':
-                    self._data[attr_name] = self.serialize_message_attr(attr)
-                if attr_fn == 'kTypedAttribute':
-                    self._data[attr_name] = self.serialize_typed_attr(attr)
-                if attr_fn == 'kNumericAttribute':
-                    self._data[attr_name] = self.serialize_numeric_attr(attr)
-
-        def get_attribute_name(self, attr):
-            return self.meta_node.dependnode_fn.findPlug(attr, True).partialName()
-        
-        def serialize_message_attr(self, attr):
-                
-                message_plug = self.meta_node.dependnode_fn.findPlug(attr, True)
-                connected_node = message_plug.connectedTo(True,False)[0].node()
-
-                connected_node = DagNodeData(om.MFnDagNode(connected_node).fullPathName())
-
-                return connected_node.dag_path
-
-        def serialize_typed_attr(self, attr):
-            
-            string_plug = self.meta_node.dependnode_fn.findPlug(attr, True)
- 
-            return string_plug.asString()
-    
-        def serialize_numeric_attr(self, attr):
-                
-            numeric_plug = self.meta_node.dependnode_fn.findPlug(attr, True)
-            
-            return numeric_plug.asFloat()
-        
-
-class RebuildObject(SerializeMetaNode):
-
-    def __init__(self, meta_node) -> None:
-        super().__init__(meta_node)
-        
-        self.meta_node = meta_node
-
-        self._class = self._get_class()
-
-    def _get_class(self):
-        
-        class_module = self.data['class_module']
-        class_name = self.data['class_name']
-        
-        module = __import__(class_module, fromlist=[class_name])
-        
-        class_ = getattr(module, class_name)
-        
-        return class_
-    
-    def rebuild(self):
-
-        class_instance = self._class.from_data(self.meta_node, self.data)
-            
-        return class_instance

@@ -5,12 +5,11 @@ import maya.api.OpenMaya as om
 from dev.utils import convert_list_to_str, convert_str_to_list
 
 from rig.controls.control_shapes import ControlShapes
-from rig.objects import object_utils as ou
-from rig.objects.object_data import DagNodeData, DependencyNodeData
-from rig.modules.base import MetaNode
+from rig.objects.base_object import BaseObject
+from rig.objects.object_data import DagNodeData
 
 
-class Control:
+class Control(BaseObject):
 
     def __init__(self, side, name, shape) -> None:
         
@@ -106,9 +105,9 @@ class Control:
                     cmds.setAttr(f'{shape}.overrideEnabled', 1)
                 cmds.setAttr(f'{shape}.overrideColor', color)
             
-            if hasattr(self, 'meta_node'):
-                cmds.setAttr(f'{self.meta_node}.color', lock=False)
-                cmds.setAttr(f'{self.meta_node}.color', value, type='string', lock=True)
+            #if hasattr(self, 'meta_node'):
+            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.color', lock=False)
+            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.color', value, type='string', lock=True)
         else:
             raise ValueError('Please provide a valid color name')
             
@@ -130,8 +129,8 @@ class Control:
         self._thickness = value
 
         if hasattr(self, 'meta_node'):
-            cmds.setAttr(f'{self.meta_node}.thickness', lock=False)
-            cmds.setAttr(f'{self.meta_node}.thickness', value, lock=True)
+            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.thickness', lock=False)
+            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.thickness', value, lock=True)
 
     def _rename(self):
     
@@ -174,40 +173,32 @@ class Control:
         return
     
     def create_meta_data(self):
-        
-        data = {}
-        data['class_module'] = str(self.__class__.__module__)
-        data['class_name'] = str(self.__class__.__name__)
-        data['parameters'] = convert_list_to_str([self._side,self._name,self._shape_name])
-        
-        data['control'] = self._ctrl_data.dag_path
-        data['srt_offset'] = self._srt_offset_data.dag_path
-        data['shapes'] = self._ctrl_data.shapes
-        data['side'] = self._side
-        data['name'] = self._name
-        data['shape'] = self._shape_name
-        data['scale'] = self._scale
-        data['index'] = self._index
-        data['thickness'] = self._thickness
-        data['color'] = self._color
+        super().create_meta_data()
 
-        return data
-    
-    def create_meta_node(self):
+        self.data['parameters'] = convert_list_to_str([self._side,self._name,self._shape_name])
 
-        self._meta_node = MetaNode(self._name, self.data).name
+        self.data['control'] = self._ctrl_data.dag_path
+        self.data['srt_offset'] = self._srt_offset_data.dag_path
+        self.data['shapes'] = self._ctrl_data.shapes
+        self.data['side'] = self._side
+        self.data['name'] = self._name
+        self.data['shape'] = self._shape_name
+        self.data['scale'] = self._scale
+        self.data['index'] = self._index
+        self.data['thickness'] = self._thickness
+        self.data['color'] = self._color
+
+        return self.data
 
     @classmethod
     def from_data(cls, meta_node, data):
-
-        instance = cls(*convert_str_to_list(data['parameters']))
-        instance.meta_node = meta_node
+        super().from_data(meta_node, data)
         
-        instance.control = DagNodeData(data['control'])
-        instance.thickness = float(data['thickness'])
-        instance.color = data['color']
+        cls.instance.control = DagNodeData(data['control'])
+        cls.instance.thickness = float(data['thickness'])
+        cls.instance.color = data['color']
 
-        return instance
+        return cls.instance
     
 
 

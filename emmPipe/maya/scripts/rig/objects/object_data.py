@@ -387,3 +387,245 @@ class DagNodeData(DependencyNodeData):
     
         else:
             return None
+
+
+class MetaNode:
+    """
+    Represents a meta node in Maya.
+
+    Attributes:
+        _name (str): The name of the meta node.
+        data (dict): The data associated with the meta node.
+        meta_node (str): The name of the created network node.
+    """
+
+    def __init__(self, name, data) -> None:
+        """
+        Initializes a new instance of the MetaNode class.
+
+        Args:
+            name (str): The name of the meta node.
+            data (dict): The data associated with the meta node.
+        """
+        self._name = name
+        self.data = data
+
+        self.meta_node = cmds.createNode('network', name=f'{self._name}_metaData')
+
+        self._create_attrs()
+
+    @property
+    def name(self):
+        """
+        Gets the name of the meta node.
+
+        Returns:
+            str: The name of the meta node.
+        """
+        return self.meta_node
+    
+    @classmethod
+    def rebuild(cls, meta_node):
+        """
+        Rebuilds a MetaNode instance from a serialized meta node.
+
+        Args:
+            meta_node (str): The name of the serialized meta node.
+
+        Returns:
+            MetaNode: The rebuilt MetaNode instance.
+        """
+        deserialize_meta_node = DeserializeMetaNode(meta_node)
+
+        return deserialize_meta_node.rebuild()
+
+    def _create_attrs(self):
+        """
+        Creates attributes on the meta node based on the provided data.
+        """
+        node_data = DependencyNodeData(self.meta_node)
+
+        type_to_attr_fn = {
+            str: [om.MFnTypedAttribute, om.MFnData.kString, 'setString'],
+            int: [om.MFnNumericAttribute, om.MFnNumericData.kInt, 'setInt'],
+            float: [om.MFnNumericAttribute, om.MFnNumericData.kFloat, 'setFloat'],
+        }
+
+        for attr_name, data in self.data.items():
+            if type(data) in type_to_attr_fn:
+                attr_fn, data_fn, plug_function = type_to_attr_fn[type(data)]
+
+                attr_mobj = attr_fn().create(attr_name, attr_name, data_fn)
+                node_data.dependnode_fn.addAttribute(attr_mobj)
+
+                set_attr_function = getattr(node_data.dependnode_fn.findPlug(attr_name, True), plug_function)
+                set_attr_function(data)
+
+                cmds.setAttr(f'{self.meta_node}.{attr_name}', lock=True)
+
+            else:
+                if type(data) == list:
+                    compound_attr = om.MFnCompoundAttribute()
+                    compound_attr_mobj = compound_attr.create(attr_name, attr_name)
+
+                    for i, item in enumerate(data):
+                        message_attr_mobj = om.MFnMessageAttribute().create(f'{attr_name}_{i}', f'{attr_name}_{i}')
+                        compound_attr.addChild(message_attr_mobj)
+
+                    node_data.dependnode_fn.addAttribute(compound_attr_mobj)
+
+                    for i, item in enumerate(data):
+                        cmds.connectAttr(f'{item.fullPathName()}.message', f'{self.meta_node}.{attr_name}_{i}')
+
+                else:
+                    message_attr_mobj = om.MFnMessageAttribute().create(attr_name, attr_name)
+                    node_data.dependnode_fn.addAttribute(message_attr_mobj)
+
+                    cmds.connectAttr(f'{data.fullPathName()}.message', f'{self.meta_node}.{attr_name}')
+
+
+    
+class DeserializeMetaNode:
+    """
+    A class that deserializes meta nodes in Maya.
+
+    Attributes:
+        ATTR_SKIPTS (list): A list of attribute names to skip during serialization.
+
+    Methods:
+        __init__(self, meta_node): Initializes a new instance of the DeserializeMetaNode class.
+        seriazlie_data(self): Serializes the data from the meta node.
+        get_attribute_name(self, attr): Gets the attribute name from the given attribute.
+        deserialize_message_attr(self, attr): Deserializes a message attribute.
+        deserialize_typed_attr(self, attr): Deserializes a typed attribute.
+        deserialize_numeric_attr(self, attr): Deserializes a numeric attribute.
+        _get_class(self): Gets the class from the serialized data.
+        rebuild(self): Rebuilds the class instance from the serialized data.
+    """
+
+    ATTR_SKIPTS = ['message','caching','frozen','isHistoricallyInteresting',
+                    'nodeState','binMembership','affects','affectedBy']
+
+    def __init__(self, meta_node) -> None:
+        """
+        Initializes a new instance of the DeserializeMetaNode class.
+
+        Args:
+            meta_node: The meta node to deserialize.
+        """
+        self.meta_node = DependencyNodeData(meta_node)
+        self._data = {}
+        self.deseriazlie_data()
+        self._class = self._get_class()
+
+    @property
+    def data(self):
+        """
+        Gets the serialized data.
+
+        Returns:
+            The serialized data.
+        """
+        return self._data
+
+    def deseriazlie_data(self):
+        """
+        Deserializes the data from the meta node.
+        """
+        attrs_mobj = [self.meta_node.dependnode_fn.attribute(attr) for attr in cmds.listAttr(self.meta_node.dependnode_fn.absoluteName())\
+                if attr not in self.ATTR_SKIPTS]
+        attrs_fn = [attr.apiTypeStr for attr in attrs_mobj]
+        
+        for attr, attr_fn in zip(attrs_mobj, attrs_fn):
+            attr_name = self.get_attribute_name(attr)
+
+            if attr_fn == 'kMessageAttribute':
+                self._data[attr_name] = self.deserialize_message_attr(attr)
+            if attr_fn == 'kTypedAttribute':
+                self._data[attr_name] = self.deserialize_typed_attr(attr)
+            if attr_fn == 'kNumericAttribute':
+                self._data[attr_name] = self.deserialize_numeric_attr(attr)
+
+    def get_attribute_name(self, attr):
+        """
+        Gets the attribute name from the given attribute.
+
+        Args:
+            attr: The attribute.
+
+        Returns:
+            The attribute name.
+        """
+        return self.meta_node.dependnode_fn.findPlug(attr, True).partialName()
+    
+    def deserialize_message_attr(self, attr):
+        """
+        Deserializes a message attribute.
+
+        Args:
+            attr: The attribute.
+
+        Returns:
+            The deserialized message attribute.
+        """
+        message_plug = self.meta_node.dependnode_fn.findPlug(attr, True)
+        connected_node = message_plug.connectedTo(True,False)[0].node()
+
+        connected_node = DagNodeData(om.MFnDagNode(connected_node).fullPathName())
+
+        return connected_node.dag_path
+
+    def deserialize_typed_attr(self, attr):
+        """
+        Deserializes a typed attribute.
+
+        Args:
+            attr: The attribute.
+
+        Returns:
+            The deserialized typed attribute.
+        """
+        string_plug = self.meta_node.dependnode_fn.findPlug(attr, True)
+
+        return string_plug.asString()
+
+    def deserialize_numeric_attr(self, attr):
+        """
+        Deserializes a numeric attribute.
+
+        Args:
+            attr: The attribute.
+
+        Returns:
+            The deserialized numeric attribute.
+        """
+        numeric_plug = self.meta_node.dependnode_fn.findPlug(attr, True)
+        
+        return numeric_plug.asFloat()
+    
+    def _get_class(self):
+        """
+        Gets the class from the serialized data.
+
+        Returns:
+            The class.
+        """
+        class_module = self.data['class_module']
+        class_name = self.data['class_name']
+        
+        module = __import__(class_module, fromlist=[class_name])
+        
+        class_ = getattr(module, class_name)
+    
+        return class_
+
+    def rebuild(self):
+        """
+        Rebuilds the class instance from the serialized data.
+
+        Returns:
+            The rebuilt class instance.
+        """
+        class_instance = self._class.from_data(self.meta_node, self.data)
+            
+        return class_instance
