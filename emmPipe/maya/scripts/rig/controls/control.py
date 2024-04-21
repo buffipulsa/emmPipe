@@ -2,7 +2,7 @@
 import maya.cmds as cmds
 import maya.api.OpenMaya as om
 
-from dev.utils import convert_list_to_str, convert_str_to_list
+from dev.utils import convert_list_to_str
 
 from rig.controls.control_shapes import ControlShapes
 from rig.objects.base_object import BaseObject
@@ -11,8 +11,9 @@ from rig.objects.object_data import DagNodeData
 
 class Control(BaseObject):
 
-    def __init__(self, side, name, shape) -> None:
-        
+    def __init__(self, side, name, shape):
+        super().__init__()
+
         self._side = side
         self._name = name
         self._shape_name = shape

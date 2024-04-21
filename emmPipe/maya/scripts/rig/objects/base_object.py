@@ -1,11 +1,16 @@
 
 from rig.objects.object_data import DependencyNodeData, MetaNode
 from dev.utils import convert_str_to_list
+from dev.logging.logger import Logger
 
 class BaseObject:
     """
     Base class for objects in the rig.
     """
+    def __init__(self) -> None:
+        
+        self.logger = Logger(__name__)
+        self.logger.level = 'DEBUG'
 
     def create_meta_data(self):
         """
@@ -14,6 +19,8 @@ class BaseObject:
         self.data = {}
         self.data['class_module'] = str(self.__class__.__module__)
         self.data['class_name'] = str(self.__class__.__name__)
+
+        self.logger.info(f'Creating metadata for {self.__class__.__name__} object.')
 
         return self.data
     

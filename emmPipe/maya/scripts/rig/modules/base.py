@@ -12,6 +12,7 @@ class RigModule(BaseObject):
     data = {}
 
     def __init__(self, name) -> None:
+        super().__init__()
         
         self._name = name
 
