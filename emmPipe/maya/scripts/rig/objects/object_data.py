@@ -476,8 +476,8 @@ class MetaNode:
 
                     for i, item in enumerate(data):
                         cmds.connectAttr(f'{item.fullPathName()}.message', f'{self.meta_node}.{attr_name}_{i}')
-
-                else:
+                
+                elif type(data) == om.MDagPath:
                     message_attr_mobj = om.MFnMessageAttribute().create(attr_name, attr_name)
                     node_data.dependnode_fn.addAttribute(message_attr_mobj)
 

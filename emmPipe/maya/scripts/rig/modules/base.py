@@ -7,6 +7,132 @@ from rig.objects.object_data import DagNodeData
 from rig.objects.object_data import MetaNode
 from rig.objects.base_object import BaseObject
 
+class RigContrainer(BaseObject):
+
+    def __init__(self, name) -> None:
+        super().__init__()
+
+        self._name = name
+
+        self._type = 'chr'
+        self._top_node = None
+        self._geometry = None
+        self._controls = None
+        self._modules = None
+
+    def create(self):
+
+        self._create_top_node()
+        self._create_geometry()
+        self._create_controls()
+        self._create_modules()
+
+        self.data = self.create_meta_data()
+        self.create_meta_node()
+
+        return self
+    
+    @property
+    def type(self):
+        return self._type
+    
+    @type.setter
+    def type(self, value):
+        self._type = value
+
+        if hasattr(self, 'meta_node'):
+            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.type', 
+                         lock=False, type='string')
+            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.type', 
+                         value, lock=True, type='string')
+
+    @property
+    def name(self):
+        return self._name
+    
+    @name.setter
+    def name(self, value):
+        self._name = value
+
+    @property
+    def top_node(self):
+        return self._top_node
+    
+    @top_node.setter
+    def top_node(self, value):
+        self._top_node = value
+
+    @property
+    def geometry(self):
+        return self._geometry
+    
+    @geometry.setter
+    def geometry(self, value):
+        self._geometry = value
+
+    @property
+    def controls(self):
+        return self._controls
+    
+    @controls.setter
+    def controls(self, value):
+        self._controls = value
+    
+    @property
+    def modules(self):
+        return self._modules
+    
+    @modules.setter
+    def modules(self, value):
+        self._modules = value
+
+    def _create_top_node(self):
+        self._top_node = DagNodeData(
+            cmds.createNode('transform', name=f'{self._name}'))
+        
+    def _create_geometry(self):
+        if not cmds.objExists('geometry'):
+            self._geometry = DagNodeData(
+                cmds.createNode('transform', name='geometry'))
+            cmds.parent(self._geometry.dag_path, self._top_node.dag_path)
+        else:
+            cmds.parent('geometry', self._top_node.dag_path)
+    
+    def _create_controls(self):
+        self._controls = DagNodeData(
+                cmds.createNode('transform', name='controls'))
+        cmds.parent(self._controls.dag_path, self._top_node.dag_path)
+
+    def _create_modules(self):
+        self._modules = DagNodeData(
+                cmds.createNode('transform', name='modules'))
+        cmds.parent(self._modules.dag_path, self._top_node.dag_path)
+
+    def create_meta_data(self):
+        super().create_meta_data()
+        
+        self.data['type'] = self.type
+        self.data['parameters'] = convert_list_to_str([self.name])
+
+        self.data['top_node'] = self._top_node.dag_path
+        self.data['geometry'] = self._geometry.dag_path
+        self.data['controls'] = self._controls.dag_path
+        self.data['modules'] = self._modules.dag_path
+
+        return self.data
+
+    @classmethod
+    def from_data(cls, meta_node, data):
+        super().from_data(meta_node, data)
+        
+        cls.instance.type = data['type']
+        cls.instance.top_node = DagNodeData(data['top_node'])
+        cls.instance.geometry = DagNodeData(data['geometry'])
+        cls.instance.controls = DagNodeData(data['controls'])
+        cls.instance.modules = DagNodeData(data['modules'])
+
+        return cls.instance
+
 class RigModule(BaseObject):
 
     data = {}
@@ -27,8 +153,6 @@ class RigModule(BaseObject):
         self._orient_constraints = None
         self._scale_constraints = None
 
-        self._meta_node = None
-
     def create(self):
 
         self.initialize_modules()
@@ -36,14 +160,6 @@ class RigModule(BaseObject):
         self.create_meta_node()
 
         return self
-
-    @property
-    def meta_node(self):
-        return self._meta_node
-    
-    @meta_node.setter
-    def meta_node(self, value):
-        self._meta_node = value
 
     @property
     def name(self):
@@ -132,6 +248,9 @@ class RigModule(BaseObject):
     def initialize_modules(self):
 
         self.module = self.add_module(f'{self.name}_module')
+        if cmds.objExists('modules'):
+            cmds.parent(self.module.dag_path, 'modules')
+
         self.systems = self.add_module('systems', parent=self.module)
         self.constraints = self.add_module('constraints', parent=self.module)
 

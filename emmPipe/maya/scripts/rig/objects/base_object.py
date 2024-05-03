@@ -12,6 +12,16 @@ class BaseObject:
         self.logger = Logger(__name__)
         self.logger.level = 'DEBUG'
 
+        self._meta_node = None
+
+    @property
+    def meta_node(self):
+        return self._meta_node
+    
+    @meta_node.setter
+    def meta_node(self, value):
+        self._meta_node = value
+
     def create_meta_data(self):
         """
         Creates and returns the metadata dictionary for the object.
