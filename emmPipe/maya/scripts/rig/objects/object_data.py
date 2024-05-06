@@ -435,7 +435,7 @@ class MetaNode:
         Returns:
             MetaNode: The rebuilt MetaNode instance.
         """
-        deserialize_meta_node = DeserializeMetaNode(meta_node)
+        deserialize_meta_node = DeserializeMetaNode(meta_node=meta_node)
 
         return deserialize_meta_node.rebuild()
 

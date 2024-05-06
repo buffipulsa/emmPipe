@@ -4,67 +4,75 @@ import maya.api.OpenMaya as om
 
 from dev.utils import convert_list_to_str
 
-from rig.controls.control_shapes import ControlShapes
+#from rig.controls.control_shapes import ControlShapes
 from rig.objects.base_object import BaseObject
-from rig.objects.object_data import DagNodeData
+from rig.objects.object_data import DagNodeData, MetaNode
 
 
 class Control(BaseObject):
 
-    def __init__(self, side, name, shape):
+    SHAPES = ['circle', 'square', 'box', 'cone', 'orb', 'arrow4way', 'arrow1way', 'arrow2way', 
+              'diamond', 'arrowSquare', 'diamondCross', 'triangle']
+    
+    COLORS = {'red': 13, 'blue': 6, 'yellow': 17}
+
+    def __init__(self, name, side, index, shape):
         super().__init__()
 
-        self._side = side
         self._name = name
-        self._shape_name = shape
+        self._side = side
+        self._index = index
+        self._shape = shape
+
+        self._combined_name = f'{self._name}_{self._side}_{str(self._index).zfill(3)}'
+        
+        self._ctrl = None
+        self._offset = None
+        self._shapes = None
 
         self._scale = 1.0
-        self._index = 0
         self._thickness = 1.0
         self._color = 'yellow'
-        
-        self._shapes = None
-        self._ctrl = None
-        self._srt_offset = None
-        self._ctrl_data = None
-        self._srt_offset_data = None
 
         self._meta_node = None
 
     def create(self):
+        """
+        Creates the control.
+
+        If the control's metadata already exists, it rebuilds the control using the existing metadata.
+        Otherwise, it creates a new control based on the specified shape.
+
+        Returns:
+            The created control.
+        Raises:
+            ValueError: If an invalid control shape is specified.
+        """
         
-        self._ctrl = ControlShapes(self._shape_name).create()
-        self._srt_offset = cmds.createNode('transform')
+        if cmds.objExists(f'{self._combined_name}_ctrl_metaData'):
+            self = MetaNode.rebuild(f'{self._combined_name}_ctrl_metaData')
+        else:
+            if self._shape in self.SHAPES:
+                shape_method = getattr(ControlShapes, self._shape)
+                self._ctrl = DagNodeData(shape_method(self._combined_name))
+            else:
+                raise ValueError(f'Please pick a control shape. Available shapes: {self.SHAPES}')
+            
+            self._offset = DagNodeData(cmds.createNode('transform', 
+                                        name=f'{self._combined_name}_offset'))
 
-        self._ctrl_data = DagNodeData(self._ctrl.name)
-        self._srt_offset_data = DagNodeData(self._srt_offset)
+            cmds.parent(self._ctrl.dag_path, self._offset.dag_path)
 
-        cmds.parent(self._ctrl_data.dag_path, self._srt_offset_data.dag_path)
+            self._shapes = self._ctrl.shapes
+            
+            self.data = self._create_meta_data()
+            self._create_meta_node(f'{self._combined_name}_ctrl')
 
-        self._shapes = self._ctrl_data.shapes
-
-        self._rename()
-        
-        self.data = self.create_meta_data()
-        self.create_meta_node()
-
-        if self._side   == 'l': self.color = 'blue'
-        elif self._side == 'r': self.color = 'red'
-        else:                   self.color = 'yellow'
+            if self._side   == 'l': self.color = 'blue'
+            elif self._side == 'r': self.color = 'red'
+            else:                   self.color = 'yellow'
 
         return self
-
-    @property
-    def m_obj(self):
-        return self._ctrl_data.m_obj
-    
-    @property
-    def dependnode_fn(self):
-        return self._ctrl_data.dependnode_fn
-
-    @property
-    def dag_path(self):
-        return self._ctrl_data.dag_path
     
     @property
     def meta_node(self):
@@ -76,28 +84,64 @@ class Control(BaseObject):
 
     @property
     def control(self):
-        return self._ctrl_data
+        return self._ctrl
     
     @control.setter
     def control(self, value):
-        self._ctrl_data = value
+        self._ctrl = value
+
+    @property
+    def offset(self):
+        return self._offset
+    
+    @offset.setter
+    def offset(self, value):
+        self._offset = value
 
     @property
     def color(self):
         return self._color
     
     @color.setter
-    def color(self, value):
-        color_data = {'red': 13,
-                      'blue': 6,
-                      'yellow': 17}
+    def color(self, value):            
+        self._color = self.set_color(value)
 
-        # ---  Check if color is valid
-        if value in color_data:
-            color = color_data[value]
+    @property
+    def thickness(self):
+        return self._thickness
+    
+    @thickness.setter
+    def thickness(self, value):
+        self._thickness = value
+        self.set_thickness(self._thickness)
+    
+    @property
+    def scale(self):
+        return self._scale
+    
+    @scale.setter
+    def scale(self, value):
+        self._scale = value
+        self.set_scale(self._scale)
 
-            if hasattr(self, '_ctrl_data'):
-                shapes = [shape.fullPathName() for shape in self._ctrl_data.shapes]
+    def set_color(self, value):
+        """
+        Sets the color of the control.
+
+        Args:
+            value (str): The color name to set.
+
+        Returns:
+            int: The color index that was set.
+
+        Raises:
+            ValueError: If an invalid color name is provided.
+        """
+        if value in self.COLORS:
+            color = self.COLORS[value]
+
+            if hasattr(self, '_ctrl'):
+                shapes = [shape.fullPathName() for shape in self._ctrl.shapes]
             else: 
                 shapes =  [self.data[key].fullPathName() for key in self.data.keys() if key.startswith('shapes_') and key[-1].isdigit()]
 
@@ -106,84 +150,80 @@ class Control(BaseObject):
                     cmds.setAttr(f'{shape}.overrideEnabled', 1)
                 cmds.setAttr(f'{shape}.overrideColor', color)
             
-            #if hasattr(self, 'meta_node'):
-            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.color', lock=False)
-            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.color', value, type='string', lock=True)
+            if hasattr(self, 'meta_node'):
+                cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.color', lock=False)
+                cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.color', value, type='string', lock=True)
         else:
             raise ValueError('Please provide a valid color name')
-            
-        self._color = value
+        
+        return color
 
-    @property
-    def thickness(self):
-        return self._thickness
-    
-    @thickness.setter
-    def thickness(self, value):
-        if hasattr(self, '_ctrl_data'):
-            shapes = [shape.fullPathName() for shape in self._ctrl_data.shapes]
+    def set_thickness(self, value):  
+        """
+        Sets the thickness of the control's shapes.
+
+        Args:
+            value (float): The desired thickness value.
+
+        Returns:
+            None
+        """
+        if hasattr(self, '_ctrl'):
+            shapes = [shape.fullPathName() for shape in self._ctrl.shapes]
         else: 
             shapes =  [self.data[key].fullPathName() for key in self.data.keys() if key.startswith('shapes_') and key[-1].isdigit()]
         
         [cmds.setAttr(f'{shape}.lineWidth', value) for shape in shapes]
 
-        self._thickness = value
-
         if hasattr(self, 'meta_node'):
             cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.thickness', lock=False)
             cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.thickness', value, lock=True)
 
-    def _rename(self):
-    
-        cmds.rename(self._ctrl_data.transform_fn.fullPathName(), f'{self._name}_{self._side}_{str(self._index).zfill(2)}_ctrl')
-        cmds.rename(self._srt_offset_data.transform_fn.fullPathName(), f'{self._name}_{self._side}_{str(self._index).zfill(2)}_srtBuffer')
-        [cmds.rename(shape_fn.fullPathName(), f'{self._name}_{self._side}_{str(self._index).zfill(2)}Shape') for shape_fn in self._ctrl_data.shapes_fn]
-
-    def extra_groups(self, *args):
-
-        groups_data = {}
-        self.extra_groups = []
-        for arg in args:
-            grp = cmds.group(self.ctrl, name=self.ctrl.replace('ctrl_', '{}_'.format(arg)))
-
-            groups_data['{}Grp'.format(arg.lower())] = grp
-
-            self.extra_groups.append(grp)
-
-        return groups_data
-
-    def match_transforms(self, obj=None, objType=None, coords=None, pos=True, rot=True, scale=False):
-        """ This method matches controller translation and rotation to desired object.
-        Args:
-            obj (str): Object to match translates and rotates to.
+    def set_scale(self, value):
         """
-        obj = ou.node_with_attr(obj, objType)
-        if not coords and obj:
-            if cmds.objExists(obj):
-                cmds.matchTransform(self.os_grp,
-                                  obj,
-                                  position=pos,
-                                  rotation=rot,
-                                  scale=scale)
-            else:
-                raise ValueError('This object does not exists. Please specify an object to match transforms')
+        Sets the scale of the control.
 
-        if coords and not obj:
-            cmds.xform(self.os_grp, translation=coords, worldSpace=True)
-        
-        return
+        Args:
+            value (float): The scale value to set.
+
+        Returns:
+            None
+        """
+        self.lock_transforms(self._ctrl.dag_path, 's', unlock=True)
+
+        for axis in 'xyz':
+            cmds.setAttr(f'{self._ctrl.dag_path}.s{axis}', value)
+        cmds.makeIdentity(self._ctrl.dag_path, scale=True, apply=True)
+
+        self.lock_transforms(self._ctrl.dag_path, 's')
+
+        if hasattr(self, 'meta_node'):
+            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.scale', lock=False)
+            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.scale', value, lock=True)
     
-    def create_meta_data(self):
-        super().create_meta_data()
+    def lock_transforms(self, node, chs='trs', axis='xyz', unlock=False):
+        """
+        Locks or unlocks the specified transform attributes of a given node.
 
-        self.data['parameters'] = convert_list_to_str([self._side,self._name,self._shape_name])
+        Args:
+            node (str): The name of the node to lock/unlock the transform attributes for.
+            chs (str, optional): The transform channels to lock/unlock. Defaults to 'trs'.
+            axis (str, optional): The axes to lock/unlock. Defaults to 'xyz'.
+            unlock (bool, optional): If True, unlocks the specified attributes. If False, locks them. Defaults to False.
+        """
+        [cmds.setAttr(f'{self._ctrl.dag_path}.{ch}{ax}', lock=not unlock) for ch in chs for ax in axis]
 
-        self.data['control'] = self._ctrl_data.dag_path
-        self.data['srt_offset'] = self._srt_offset_data.dag_path
-        self.data['shapes'] = self._ctrl_data.shapes
+    def _create_meta_data(self):
+        super()._create_meta_data()
+
+        self.data['parameters'] = convert_list_to_str([self._name,self._side,self._index,self._shape])
+
+        self.data['control'] = self._ctrl.dag_path
+        self.data['offset'] = self._offset.dag_path
+        self.data['shapes'] = self._ctrl.shapes
         self.data['side'] = self._side
         self.data['name'] = self._name
-        self.data['shape'] = self._shape_name
+        self.data['shape'] = self._shape
         self.data['scale'] = self._scale
         self.data['index'] = self._index
         self.data['thickness'] = self._thickness
@@ -196,358 +236,354 @@ class Control(BaseObject):
         super().from_data(meta_node, data)
         
         cls.instance.control = DagNodeData(data['control'])
+        cls.instance.offset = DagNodeData(data['offset'])
         cls.instance.thickness = float(data['thickness'])
         cls.instance.color = data['color']
 
         return cls.instance
     
 
+class ControlShapes:
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-class Ctrl:
-    """ This class creates and manipulates an animation control and its structure """
-
-    def __init__(self,
-                 shape='circle',
-                 name='RENAME_ME',
-                 scale=1,
-                 subs=True):
-
-        self.ctrl_name = name
-        self.scale = scale
-        self.subs = subs
-        self.sub_a_ctrl = None
-        self.sub_b_ctrl = None
-        self.extraGrps = []
-        self.originOffset = None
-        self.originCtrl = None
-
-        # ---  CREATE CONTROL
-        self._create(shape)
-
-    def _create(self, shape):
-        """ This function creates the animation control.
-        Args:
-            shape (str): Desired control shape.
+    @staticmethod
+    def create_shape(name, positions, degree=1, close=False):
         """
-        self.os_grp, self.ctrl, self.shapes = control_shapes.shapes(shape)
+        Creates a control shape based on the given positions.
 
-        # ---  Rename control
-        self.rename(self.ctrl_name)
-
-        # ---  Set the default shape thickness to 1
-        self.thickness(1)
-
-        # ---  Set the default color
-        if self.ctrl.startswith('ctrl_l_'):
-            self.color('blue')
-        elif self.ctrl.startswith('ctrl_r_'):
-            self.color('red')
-        else:
-            self.color('yellow')
-
-        # ---  Lock visibility by default
-        self.lock_visibility(True)
-
-        # ---  Set the scale of the shape
-        self.scale_ctrl(self.scale)
-
-        # ---  Create sub controls
-        if self.subs:
-            self._create_sub_ctrls(0.9)
-
-        # ---  Lock scale attributes by default
-        self.lock_transforms('scale')
-
-    def get_ctrl_os(self):
-        return self.os_grp.name()
-
-    def get_ctrl_transform(self):
-        return self.ctrl.name()
-
-    def get_ctrl_shape(self):
-        return self.shapes
-
-    def get_last_sub(self):
-        return self.sub_b_ctrl[0].name()
-
-    def _create_sub_ctrls(self, value):
-        """ This method renames the control and all of its groups.
         Args:
-            value (int): How many sub controls to be created.
+            positions (list): A list of positions to create the control shape.
+
+        Returns:
+            str: The name of the transform node representing the control shape.
         """
-        self.sub_a_ctrl = cmds.duplicate(self.ctrl,
-                                       name='{}_sub001'.format(self.ctrl))
+        temp_transforms = []
 
-        self.sub_b_ctrl = cmds.duplicate(self.ctrl,
-                                       name='{}_sub002'.format(self.ctrl))
+        for pos in positions:
+            crv = cmds.curve(d=degree, p=pos)
+            if close:
+                cmds.closeCurve(crv, ch=True, ps=False, rpo=True)
+            temp_transforms.append(crv)
 
-        cmds.parent(self.sub_a_ctrl, self.ctrl)
-        cmds.parent(self.sub_b_ctrl, self.sub_a_ctrl[0])
+        crv_transform = cmds.createNode('transform', name=f'{name}_ctrl')
+        for temp_transform in temp_transforms:
+            shape = cmds.listRelatives(temp_transform, shapes=True)
+            shape = cmds.rename(shape, f'{name}_ctrlShape_001')
+            cmds.parent(shape, crv_transform, r=True, shape=True)
 
-        for sub in [self.sub_a_ctrl[0],self.sub_b_ctrl[0]]:
-            for axis in 'xyz':
-                sub.attr('s{}'.format(axis)).set(lock=False)
-                sub.attr('s{}'.format(axis)).set(keyable=True)
+        cmds.delete(temp_transforms)
 
-        for sub in [self.sub_a_ctrl[0], self.sub_b_ctrl[0]]:
-            for axis in 'xyz':
-                sub.attr('s{}'.format(axis)).set(value)
-                sub.attr('s{}'.format(axis)).set(keyable=False)
+        return crv_transform
 
-            cmds.makeIdentity(sub, scale=True, apply=True)
-            sub.scale.set(lock=True)
+    @classmethod
+    def circle(cls, name):
+        """ circle shape """
 
-        for control in [self.ctrl, self.sub_a_ctrl]:
-            cmds.addAttr(control,
-                       ln='Sub_Vis',
-                       at='enum',
-                       enumName='Hide:Show',
-                       defaultValue=0,
-                       keyable=True)
+        pos = []
+        pos.append( (0.39180581244561224, 2.3991186704942366e-17, -0.3918058124456123) )
+        pos.append( (3.392866161555456e-17, 3.392866161555456e-17, -0.5540970937771938) )
+        pos.append( (-0.39180581244561224, 2.399118670494236e-17, -0.3918058124456122) )
+        pos.append( (-0.5540970937771941, 1.7588678095030136e-33, -2.872449118762415e-17) )
+        pos.append( (-0.39180581244561224, -2.3991186704942363e-17, 0.39180581244561224) )
+        pos.append( (-5.5504284848016124e-17, -3.3928661615554586e-17, 0.5540970937771942) )
+        pos.append( (0.39180581244561224, -2.399118670494236e-17, 0.3918058124456122) )
+        pos.append( (0.5540970937771941, -4.6268396050550495e-33, 7.556202503899795e-17) )
 
-        self.ctrl.Sub_Vis.connect(self.sub_a_ctrl[0].getShape().visibility)
-        self.sub_a_ctrl[0].Sub_Vis.connect(self.sub_b_ctrl[0].getShape().visibility)
+        return cls.create_shape(name,[pos], 2, True)
 
-    def rename(self, prefix):
-        """ This method renames the control and all of its groups.
-        Args:
-            prefix (str): New desired name.
+    @classmethod
+    def square(cls, name):
         """
-        cmds.rename(self.os_grp, prefix.replace('ctrl', 'offset'))
-        ctrl_name = cmds.rename(self.ctrl, prefix)
-
-        # for i, shape in enumerate(self.shapes):
-        #     print(shape)
-        #     cmds.rename(shape, '{}Shape{}'.format(ctrl_name, (i+1)))
-
-    def thickness(self, value):
-        """ This method sets the curve thickness value.
-        Args:
-            value (int): New desired control thickness value.
+        square shape
         """
-        for shape in self.shapes:
-            cmds.setAttr(f'{shape}.lineWidth', value)
+        print('test')
+        pos = []
+        pos.append((-1.000000, 0.000000, 1.000000))
+        pos.append((-1.000000, 0.000000, -1.000000))
+        pos.append((1.000000, 0.000000, -1.000000))
+        pos.append((1.000000, 0.000000, 1.000000))
 
-    def color(self, color):
-        """ This method sets the control shape color.
-        Args:
-            color (str): Name of desired color. Examples are 'red', 'blue', 'yellow'
-        """
-        color_data = {'red': 13,
-                      'blue': 6,
-                      'yellow': 17}
+        return cls.create_shape(name,[pos])
 
-        # ---  Check if color is valid
-        if color in color_data:
-            for key, value in color_data.items():
-                if color == key:
-                    for shape in self.shapes:
-                        if shape.overrideEnabled.get() != 1:
-                            shape.overrideEnabled.set(1)
-                        shape.overrideColor.set(color_data[key])
-        else:
-            cmds.warning('Please provide a valid color name')
+    @classmethod
+    def arrowSquare(cls, name):
+        """ arrow-square shape """
 
-    def match_transforms(self, obj=None, coords=None):
-        """ This method matches controller translation and rotation to desired object.
-        Args:
-            obj (str): Object to match translates and rotates to.
-        """
-        if not coords and obj:
-            if cmds.objExists(obj):
-                cmds.matchTransform(self.os_grp,
-                                  obj,
-                                  position=True,
-                                  rotation=True,
-                                  scale=False)
-            else:
-                cmds.warning('This object does not exists. Please specify an object to match transforms')
+        pos = []
+        pos.append( ( 0.510003, 0.000000, -0.382900 ) )
+        pos.append( ( 0.510003, 0.000000, 0.382900 ) )
+        pos.append( ( 0.000000, 0.000000, 0.765800 ) )
+        pos.append( ( -0.510003, 0.000000, 0.382900 ) )
+        pos.append( ( -0.510003, 0.000000, -0.382900 ) )
 
-        if coords and not obj:
-            cmds.xform(self.os_grp, translation=coords, worldSpace=True)
+        return cls.create_shape(name, [pos], close=True)
 
-    def match_translate(self, obj):
-        """ This method matches controller translation to desired object.
-        Args:
-            obj (str): Object to match translates to.
-        """
-        if cmds.objExists(obj):
-            cmds.matchTransform(self.os_grp,
-                              obj,
-                              position=True,
-                              rotation=False,
-                              scale=False)
-        else:
-            cmds.warning('This object does not exists. Please specify an object to match translates')
+    @classmethod
+    def box(cls, name):
+        """ box shape """
 
-    def match_rotate(self, obj):
-        """ This method matches controller rotation to desired object.
-        Args:
-            obj (str): Object to match rotates to.
-        """
-        if cmds.objExists(obj):
-            cmds.matchTransform(self.os_grp,
-                              obj,
-                              position=False,
-                              rotation=True,
-                              scale=False)
-        else:
-            cmds.warning('This object does not exists. Please specify an object to match rotates')
+        print('test')
+        pos = []
+        pos.append( ( 0.500000, 0.499745, 0.500000 ) )
+        pos.append( ( -0.500000, 0.499745, 0.500000 ) )
+        pos.append( ( -0.500000, -0.500255, 0.500000 ) )
+        pos.append( ( 0.500000, -0.500255, 0.500000 ) )
+        pos.append( ( 0.500000, 0.499745, 0.500000 ) )
+        pos.append( ( 0.500000, 0.499745, -0.500000 ) )
+        pos.append( ( 0.500000, -0.500255, -0.500000 ) )
+        pos.append( ( 0.500000, -0.500255, 0.500000 ) )
+        pos.append( ( 0.500000, 0.499745, 0.500000 ) )
+        pos.append( ( 0.500000, 0.499745, -0.500000 ) )
+        pos.append( ( -0.500000, 0.499745, -0.500000 ) )
+        pos.append( ( -0.500000, -0.500255, -0.500000 ) )
+        pos.append( ( 0.500000, -0.500255, -0.500000 ) )
+        pos.append( ( -0.500000, -0.500255, -0.500000 ) )
+        pos.append( ( -0.500000, -0.500255, 0.500000 ) )
+        pos.append( ( -0.500000, 0.499745, 0.500000 ) )
+        pos.append( ( -0.500000, 0.499745, -0.500000 ) )
 
-    def scale_ctrl(self, value):
-        """ This method scales the controller to the desired value.
-        Args:
-            value (int): New scale value.
-        """
-        self.unlock_transforms('scale')
+        return cls.create_shape(name,[pos])
 
-        for axis in 'xyz':
-            self.ctrl.attr('s{}'.format(axis)).set(value)
-        cmds.makeIdentity(self.ctrl, scale=True, apply=True)
+    @classmethod
+    def triangle(cls, name):
+        """ triangle shape """
 
-        self.lock_transforms('scale')
+        pos = []
+        pos.append( ( -0.500000, 0.000000, -0.500000 ) )
+        pos.append( ( 0.000000, 0.000000, 0.500000 ) )
+        pos.append( ( 0.500000, 0.000000, -0.500000 ) )
 
-    def extra_groups(self, *args):
-        """ Create extra groups for the control and parents them in order of input.
-        Example: "Auto" on a control named "My_Ctrl" would end up "My_Ctrl_Auto_Grp".
-        Args:
-            *args (str): Desired names of new groups.
-        Returns (dict): Newly created groups.
-        """
-        groups_data = {}
-        for arg in args:
-            grp = cmds.group(self.ctrl, name=self.ctrl.replace('ctrl_', '{}_'.format(arg)))
+        return cls.create_shape(name, [pos], close=True)
 
-            groups_data['{}Grp'.format(arg.lower())] = grp
+    @classmethod
+    def cone(cls, name):
+        """ cone shape """
 
-            self.extraGrps.append(grp)
+        pos = []
+        pos.append( ( -0.250000, 0.000000, 0.433013 ) )
+        pos.append( ( 0.000000, 1.000000, 0.000000 ) )
+        pos.append( ( 0.250000, 0.000000, 0.433013 ) )
+        pos.append( ( -0.250000, 0.000000, 0.433013 ) )
+        pos.append( ( -0.500000, 0.000000, -0.000000 ) )
+        pos.append( ( 0.000000, 1.000000, 0.000000 ) )
+        pos.append( ( -0.500000, 0.000000, -0.000000 ) )
+        pos.append( ( -0.250000, 0.000000, -0.433013 ) )
+        pos.append( ( 0.000000, 1.000000, 0.000000 ) )
+        pos.append( ( 0.250000, 0.000000, -0.433013 ) )
+        pos.append( ( -0.250000, 0.000000, -0.433013 ) )
+        pos.append( ( 0.250000, 0.000000, -0.433013 ) )
+        pos.append( ( 0.000000, 1.000000, 0.000000 ) )
+        pos.append( ( 0.500000, 0.000000, 0.000000 ) )
+        pos.append( ( 0.250000, 0.000000, -0.433013 ) )
+        pos.append( ( 0.500000, 0.000000, 0.000000 ) )
+        pos.append( ( 0.250000, 0.000000, 0.433013 ) )
 
-        return groups_data
+        return cls.create_shape(name, [pos])
 
-    def lock_visibility(self, lock=True):
-        """ This method locks & hides or unlocks & shows the visibility attribute
-        of the control.
-        Args:
-            lock (bool): True to lock and hide, False to unlock and show.
-        """
-        try:
-            if lock or not lock:
-                self.ctrl.visibility.set(lock=lock, keyable=not lock)
-        except TypeError:
-            cmds.warning('Please provide either True or False')
+    @classmethod
+    def orb(cls, name):
+        """ orb shape """
 
-    def lock_transforms(self, *args):
-        """ This method locks given transforms.
-        Accepted inputs are 'translate' or 't', 'rotate' or 'r' and 'scale' or 's'.
-        Args:
-            *args (str): Desired transform to lock.
-        """
-        axes = 'xyz'
+        pos = []
+        ####################################################
+        pos.append( ( 0.391806, -0.391806, 0.000000 ) )
+        pos.append( ( 0.000000, -0.554097, 0.000000 ) )
+        pos.append( ( -0.391806, -0.391806, 0.000000 ) )
+        pos.append( ( -0.554097, -0.000000, 0.000000 ) )
+        pos.append( ( -0.391806, 0.391806, 0.000000 ) )
+        pos.append( ( -0.000000, 0.554097, 0.000000 ) )
+        pos.append( ( 0.391806, 0.391806, 0.000000 ) )
+        pos.append( ( 0.554097, -0.000000, 0.000000 ) )
+        ####################################################
+        pos2 = []
+        pos2.append( ( 0.391806, 0.000000, -0.391806 ) )
+        pos2.append( ( 0.000000, 0.000000, -0.554097 ) )
+        pos2.append( ( -0.391806, 0.000000, -0.391806 ) )
+        pos2.append( ( -0.554097, 0.000000, -0.000000 ) )
+        pos2.append( ( -0.391806, -0.000000, 0.391806 ) )
+        pos2.append( ( -0.000000, -0.000000, 0.554097 ) )
+        pos2.append( ( 0.391806, -0.000000, 0.391806 ) )
+        pos2.append( ( 0.554097, -0.000000, 0.000000 ) )
+        ####################################################
+        pos3 = []
+        pos3.append( ( 0.000000, -0.391806, -0.391806 ) )
+        pos3.append( ( 0.000000, -0.000000, -0.554097 ) )
+        pos3.append( ( 0.000000, 0.391806, -0.391806 ) )
+        pos3.append( ( -0.000000, 0.554097, -0.000000 ) )
+        pos3.append( ( -0.000000, 0.391806, 0.391806 ) )
+        pos3.append( ( -0.000000, 0.000000, 0.554097 ) )
+        pos3.append( ( -0.000000, -0.391806, 0.391806 ) )
+        pos3.append( ( 0.000000, -0.554097, 0.000000 ) )
 
-        for arg in args:
-            if arg in ('translate', 't'):
-                for axis in axes:
-                    self.ctrl.attr('t'+axis).set(lock=True, keyable=False)
-                    # ---  Check if control has subs
-                    if self.subs:
-                        self.sub_a_ctrl[0].attr('t' + axis).set(lock=True, keyable=False)
-                        self.sub_b_ctrl[0].attr('t' + axis).set(lock=True, keyable=False)
-            if arg in ('rotate', 'r'):
-                for axis in axes:
-                    self.ctrl.attr('r'+axis).set(lock=True, keyable=False)
-                    # ---  Check if control has subs
-                    if self.subs:
-                        self.sub_a_ctrl[0].attr('r' + axis).set(lock=True, keyable=False)
-                        self.sub_b_ctrl[0].attr('r' + axis).set(lock=True, keyable=False)
-            if arg in ('scale', 's'):
-                for axis in axes:
-                    self.ctrl.attr('s'+axis).set(lock=True, keyable=False)
+        return cls.create_shape(name, [pos, pos2, pos3], 3, True)
 
-    def unlock_transforms(self, *args):
-        """ This method unlocks given transforms.
-        Accepted inputs are 'translate' or 't', 'rotate' or 'r' and 'scale' or 's'.
-        Args:
-            *args (str): Desired transform to unlock.
-        """
-        axes = 'xyz'
+    @classmethod
+    def diamond(cls):
+        """ diamond shape """
 
-        for arg in args:
-            if arg in ('translate', 't'):
-                for axis in axes:
-                    self.ctrl.attr('t'+axis).set(lock=False, keyable=True)
-                    # ---  Check if control has subs
-                    if self.subs:
-                        self.sub_a_ctrl.attr('t' + axis).set(lock=False, keyable=True)
-                        self.sub_b_ctrl.attr('t' + axis).set(lock=False, keyable=True)
-            if arg in ('rotate', 'r'):
-                for axis in axes:
-                    self.ctrl.attr('r'+axis).set(lock=False, keyable=True)
-                    # ---  Check if control has subs
-                    if self.subs:
-                        self.sub_a_ctrl.attr('r' + axis).set(lock=False, keyable=True)
-                        self.sub_b_ctrl.attr('r' + axis).set(lock=False, keyable=True)
-            if arg in ('scale', 's'):
-                for axis in axes:
-                    self.ctrl.attr('s'+axis).set(lock=False, keyable=True)
-                    # ---  Check if control has subs
-                    # ---  if self.subs:
-                    # ---      self.sub_a_ctrl.attr('s' + axis).set(lock=False, keyable=True)
-                    # ---      self.sub_b_ctrl.attr('s' + axis).set(lock=False, keyable=True)
+        pos = []
+        pos.append((-1.000000, 0.000000, 0.000000))
+        pos.append((0.000000, 1.000000, 0.000000))
+        pos.append((1.000000, 0.000000, 0.000000))
+        pos.append((0.000000, -1.000000, 0.000000))
+        pos.append((-1.000000, 0.000000, 0.000000))
+        pos.append((0.000000, 1.000000, 0.000000))
+        pos.append((0.000000, 0.000000, 1.000000))
+        pos.append((0.000000, -1.000000, 0.000000))
+        pos.append((0.000000, 0.000000, -1.000000))
+        pos.append((0.000000, 1.000000, 0.000000))
+        pos.append((-1.000000, 0.000000, 0.000000))
+        pos.append((0.000000, 0.000000, 1.000000))
+        pos.append((1.000000, 0.000000, 0.000000))
+        pos.append((0.000000, 0.000000, -1.000000))
+        pos.append((-1.000000, 0.000000, 0.000000))
 
-    def parent_to(self, obj):
-        cmds.parent(self.os_grp, obj)
+        return cls.create_shape(name, [pos])
 
-    def createJoint(self):
-        jnt = cmds.createNode('joint', name=self.ctrl_name.replace('ctrl_', 'ctrlJnt_'), skipSelect=True)
-        cmds.matchTransform(jnt, self.ctrl_name)
-        jnt.visibility.set(0)
+    @classmethod
+    def diamondCross(cls, name):
+        """ diamondCross shape """
 
-        if self.subs:
-            cmds.parent(jnt, self.sub_b_ctrl)
-        else:
-            cmds.parent(jnt, self.ctrl_name)
+        pos = []
 
-    def createAtOriginCtrl(self, connectExtraGrps=True, skipGrps=[]):
+        pos.append( ( 0.000000, 0.000000, 0.000000 ) )
+        pos.append( ( 0.000000, 0.000000, -0.496386 ) )
+        pos.append( ( -0.248193, 0.000000, -0.744578 ) )
+        pos.append( ( 0.000000, 0.000000, -0.992771 ) )
+        pos.append( ( 0.248193, 0.000000, -0.744578 ) )
+        pos.append( ( 0.000000, 0.000000, -0.496386 ) )
+        pos.append( ( 0.000000, 0.000000, 0.000000 ) )
+        pos.append( ( 0.496386, 0.000000, 0.000000 ) )
+        pos.append( ( 0.744578, 0.000000, -0.248193 ) )
+        pos.append( ( 0.992771, 0.000000, 0.000000 ) )
+        pos.append( ( 0.744578, 0.000000, 0.248193 ) )
+        pos.append( ( 0.496386, 0.000000, 0.000000 ) )
+        pos.append( ( 0.000000, 0.000000, 0.000000 ) )
+        pos.append( ( 0.000000, 0.000000, 0.496386 ) )
+        pos.append( ( 0.248193, 0.000000, 0.744578 ) )
+        pos.append( ( 0.000000, 0.000000, 0.992771 ) )
+        pos.append( ( -0.248193, 0.000000, 0.744578 ) )
+        pos.append( ( 0.000000, 0.000000, 0.496386 ) )
+        pos.append( ( 0.000000, 0.000000, 0.000000 ) )
+        pos.append( ( -0.496386, 0.000000, 0.000000 ) )
+        pos.append( ( -0.744578, 0.000000, 0.248193 ) )
+        pos.append( ( -0.992771, 0.000000, 0.000000 ) )
+        pos.append( ( -0.744578, 0.000000, -0.248193 ) )
+        pos.append( ( -0.496386, 0.000000, 0.000000 ) )
+        pos.append( ( 0.000000, 0.000000, 0.000000 ) )
 
-        self.originOffset = cmds.createNode('transform', name='{}_Origin'.format(self.get_ctrl_os()))
-        cmds.matchTransform(self.originOffset, self.get_ctrl_os())
+        return cls.create_shape(name, [pos])
 
-        if self.extraGrps:
-            for grp in self.extraGrps:
-                extraGrp = cmds.createNode('transform', name='{}_Origin'.format(grp))
-                cmds.matchTransform(extraGrp, grp)
-                cmds.parent(extraGrp, '{}_Origin'.format(grp.getParent()))
+    @classmethod
+    def arrow1way(cls, name):
+        
+        pos = []
+        pos.append( (0.3535533547401428, 0.0, -0.3535533547401428) )
+        pos.append( (0.0, 0.0, -0.4999999403953552) )
+        pos.append( (-0.3535533547401428, 0.0, -0.3535533547401428) )
+        pos.append( (-0.5, 0.0, 0.0) )
+        pos.append( (-0.3535533845424652, 0.0, 0.3535533845424652) )
+        pos.append( (-0.1767766922712326, 0.0, 0.4267766773700714) )
+        pos.append( (-0.1767766922712326, 0.0, 0.4619667547499593) )
+        pos.append( (-0.31628113985061646, 0.0, 0.4619667547499593) )
+        pos.append( (0.0, 0.0, 0.7457171695982869) )
+        pos.append( (0.31628113985061646, 0.0, 0.4619667547499593) )
+        pos.append( (0.1767766922712326, 0.0, 0.4619667547499593) )
+        pos.append( (0.1767766922712326, 0.0, 0.4267766773700714) )
+        pos.append( (0.3535533845424652, 0.0, 0.3535533845424652) )
+        pos.append( (0.5, 0.0, 0.0) )
 
-                if connectExtraGrps:
-                    for skipGrp in skipGrps:
-                        if grp.split('_')[0] != skipGrp:
-                            grp.translate.connect(extraGrp.translate)
-                            grp.rotate.connect(extraGrp.rotate)
-                            grp.scale.connect(extraGrp.scale)
+        pos2 = []
+        pos2.append( (-0.1767766922712326, 0.0, 0.4267766773700714) )
+        pos2.append( (-0.1767766922712326, 0.06717795332053328, 0.4619667547499593) )
+        pos2.append( (-0.31628113985061646, 0.06717795332053328, 0.4619667547499593) )
+        pos2.append( (0.0, 0.06717795332053328, 0.7457171695982869) )
+        pos2.append( (0.31541842222213745, 0.06717795332053328, 0.46194371581077576) )
+        pos2.append( (0.1769469833419921, 0.06717795332053328, 0.4619667547499593) )
+        pos2.append( (0.1767766922712326, 0.0, 0.4267766773700714) )
 
-        self.originCtrl = cmds.createNode('transform', name='{}_Origin'.format(self.get_ctrl_transform()))
-        cmds.matchTransform(self.originCtrl, self.get_ctrl_transform())
-        cmds.parent(self.originCtrl, '{}_Origin'.format(cmds.listRelatives(self.get_ctrl_transform(), parent=True)[0]))
+        return cls.create_shape(name, [pos, pos2], close=True)
 
-        self.ctrl.translate.connect(self.originCtrl.translate)
-        self.ctrl.rotate.connect(self.originCtrl.rotate)
-        self.ctrl.scale.connect(self.originCtrl.scale)
-'''
+    @classmethod
+    def arrow4way(cls, name):
+        """ COG shape """
+
+        pos = []
+
+        pos.append( ( -0.134942, 0.000000, -0.269883 ) )
+        pos.append( ( -0.134942, 0.000000, -0.404825 ) )
+        pos.append( ( -0.269883, 0.000000, -0.404825 ) )
+        pos.append( ( 0.000000, 0.000000, -0.674708 ) )
+        pos.append( ( 0.269883, 0.000000, -0.404825 ) )
+        pos.append( ( 0.134942, 0.000000, -0.404825 ) )
+        pos.append( ( 0.134942, 0.000000, -0.269883 ) )
+        pos.append( ( 0.269883, 0.000000, -0.134942 ) )
+        pos.append( ( 0.404825, 0.000000, -0.134942 ) )
+        pos.append( ( 0.404825, 0.000000, -0.269883 ) )
+        pos.append( ( 0.674708, 0.000000, 0.000000 ) )
+        pos.append( ( 0.404825, 0.000000, 0.269883 ) )
+        pos.append( ( 0.404825, 0.000000, 0.134942 ) )
+        pos.append( ( 0.269883, 0.000000, 0.134942 ) )
+        pos.append( ( 0.134942, 0.000000, 0.269883 ) )
+        pos.append( ( 0.134942, 0.000000, 0.404825 ) )
+        pos.append( ( 0.269883, 0.000000, 0.404825 ) )
+        pos.append( ( 0.000000, 0.000000, 0.674708 ) )
+        pos.append( ( -0.269883, 0.000000, 0.404825 ) )
+        pos.append( ( -0.134942, 0.000000, 0.404825 ) )
+        pos.append( ( -0.134942, 0.000000, 0.269883 ) )
+        pos.append( ( -0.269883, 0.000000, 0.134942 ) )
+        pos.append( ( -0.404825, 0.000000, 0.134942 ) )
+        pos.append( ( -0.404825, 0.000000, 0.269883 ) )
+        pos.append( ( -0.674708, 0.000000, 0.000000 ) )
+        pos.append( ( -0.404825, 0.000000, -0.269883 ) )
+        pos.append( ( -0.404825, 0.000000, -0.134942 ) )
+        pos.append( ( -0.269883, 0.000000, -0.134942 ) )
+
+        return cls.create_shape(name, [pos], close=True)
+
+    @classmethod
+    def arrow2way(cls, name):
+        """ COG shape """
+
+        pos = []
+
+        pos.append( (-0.3535533845424652, 0.0, 0.3535533845424652) )
+        pos.append( (-0.1767766922712326, 0.0, 0.42653024196624756) )
+        pos.append( (-0.1767767071723938, 0.0, 0.46196675300598145) )
+        pos.append( (-0.31628113985061646, 0.0, 0.46196675300598145) )
+        pos.append( (0.0, 0.0, 0.7439941763877869) )
+        pos.append( (0.31628113985061646, 0.0, 0.46196675300598145) )
+        pos.append( (0.1767767071723938, 0.0, 0.46196675300598145) )
+        pos.append( (0.1767766922712326, 0.0, 0.42653024196624756) )
+        pos.append( (0.3535533845424652, 0.0, 0.3535533845424652) )
+        pos.append( (0.5, 0.0, 0.0) )
+        pos.append( (0.3535533845424652, 0.0, -0.3535533845424652) )
+        pos.append( (0.1767766922712326, 0.0, -0.42653024196624756) )
+        pos.append( (0.1767767071723938, 0.0, -0.46196675300598145) )
+        pos.append( (0.31628113985061646, 0.0, -0.46196675300598145) )
+        pos.append( (0.0, 0.0, -0.7439941763877869) )
+        pos.append( (-0.31628113985061646, 0.0, -0.46196675300598145) )
+        pos.append( (-0.1767767071723938, 0.0, -0.46196675300598145) )
+        pos.append( (-0.1767766922712326, 0.0, -0.42653024196624756) )
+        pos.append( (-0.3535533845424652, 0.0, -0.3535533845424652) )
+        pos.append( (-0.5, 0.0, 0.0) )
+
+        pos2 = []
+        pos2.append( (-0.1767766922712326, 0.0, 0.4267766773700714) )
+        pos2.append( (-0.1767766922712326, 0.06717795332053328, 0.4619667547499593) )
+        pos2.append( (-0.31628113985061646, 0.06717795332053328, 0.4619667547499593) )
+        pos2.append( (0.0, 0.06717795332053328, 0.7457171695982869) )
+        pos2.append( (0.31541842222213745, 0.06717795332053328, 0.46194371581077576) )
+        pos2.append( (0.1769469833419921, 0.06717795332053328, 0.4619667547499593) )
+        pos2.append( (0.1767766922712326, 0.0, 0.4267766773700714) )
+
+        pos3 = []
+        pos3.append( (-0.1767766922712326, 0.0, -0.4267766773700714) )
+        pos3.append( (-0.1767766922712326, 0.06717795332053328, -0.4619667547499593) )
+        pos3.append( (-0.31628113985061646, 0.06717795332053328, -0.4619667547499593) )
+        pos3.append( (0.0, 0.06717795332053328, -0.7457171695982869) )
+        pos3.append( (0.31541842222213745, 0.06717795332053328, -0.46194371581077576) )
+        pos3.append( (0.1769469833419921, 0.06717795332053328, -0.4619667547499593) )
+        pos3.append( (0.1767766922712326, 0.0, -0.4267766773700714) )
+
+        return cls.create_shape(name, [pos,pos2,pos3], close=True)
+

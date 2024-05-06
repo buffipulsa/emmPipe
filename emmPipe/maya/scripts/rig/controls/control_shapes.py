@@ -55,7 +55,7 @@ class ControlShapes:
         """
         square shape
         """
-
+        
         pos = []
         pos.append((-1.000000, 0.000000, 1.000000))
         pos.append((-1.000000, 0.000000, -1.000000))
@@ -159,10 +159,6 @@ class ControlShapes:
         pos.append( ( 0.250000, 0.000000, -0.433013 ) )
         pos.append( ( 0.500000, 0.000000, 0.000000 ) )
         pos.append( ( 0.250000, 0.000000, 0.433013 ) )
-
-        # crv = cmds.curve(d=1, p=pos)
-
-        # return crv
 
         return self.create_shape([pos])
 

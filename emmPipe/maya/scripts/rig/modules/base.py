@@ -6,9 +6,20 @@ from dev.utils import convert_list_to_str, convert_str_to_list
 from rig.objects.object_data import DagNodeData
 from rig.objects.object_data import MetaNode
 from rig.objects.base_object import BaseObject
+from rig.controls.control import Control
 
 class RigContrainer(BaseObject):
+    """
+    Represents a rig container that contains modules, controls, and metadata.
 
+    Properties:
+        name (str): The name of the rig container.
+        type (str): The type of the rig container.
+        top_node (DagNodeData): The top node of the rig container.
+        geometry (DagNodeData): The geometry module of the rig container.
+        controls (DagNodeData): The controls module of the rig container.
+        modules (DagNodeData): The modules module of the rig container.
+    """
     def __init__(self, name) -> None:
         super().__init__()
 
@@ -20,18 +31,96 @@ class RigContrainer(BaseObject):
         self._controls = None
         self._modules = None
 
+    #... PUBLIC METHODS ...#
     def create(self):
+        """
+        Creates the module.
 
-        self._create_top_node()
-        self._create_geometry()
-        self._create_controls()
-        self._create_modules()
+        If the metadata for the module already exists, it rebuilds the module using the existing metadata.
+        Otherwise, it initializes the modules, creates the controls, creates the metadata, and creates the meta node.
 
-        self.data = self.create_meta_data()
-        self.create_meta_node()
+        Returns:
+            The created module.
+        """      
+        if cmds.objExists(f'{self._name}_metaData'):
+            self = MetaNode.rebuild(f'{self._name}_metaData')
+        else:
+            self._initialize_modules()
+            self._create_controls()
+
+            self.data = self._create_meta_data()
+            self._create_meta_node(self._name)
 
         return self
+
+    @classmethod
+    def from_data(cls, meta_node, data):
+        super().from_data(meta_node, data)
+        
+        cls.instance.type = data['type']
+        cls.instance.top_node = DagNodeData(data['top_node'])
+        cls.instance.geometry = DagNodeData(data['geometry'])
+        cls.instance.controls = DagNodeData(data['controls'])
+        cls.instance.modules = DagNodeData(data['modules'])
+
+        return cls.instance
     
+    #... PRIVATE METHODS ...#
+    def _initialize_modules(self):
+        """
+        Initializes the modules for the rig container.
+        """
+        self._top_node = self._add_module(self.name)
+        self._geometry = self._add_module('geometry', self._top_node)
+        self._controls = self._add_module('controls', self._top_node)
+        self._modules = self._add_module('modules', self._top_node)
+
+    def _create_controls(self):
+        """
+        Creates and sets up controls for the rig container.
+        """
+        global_ctrl = Control('global', 'c', '0', 'arrow1way').create()
+        layout_ctrl = Control('layout', 'c', '0', 'circle').create()
+        local_ctrl = Control('local', 'c', '0', 'circle').create()
+
+        global_ctrl.scale = 10
+        layout_ctrl.scale = global_ctrl.scale - (0.2 * global_ctrl.scale)
+        local_ctrl.scale = layout_ctrl.scale - (0.2 * layout_ctrl.scale)
+
+        cmds.parent(global_ctrl.offset.dag_path, self._controls.dag_path)
+        cmds.parent(layout_ctrl.offset.dag_path, global_ctrl.control.dag_path)
+        cmds.parent(local_ctrl.offset.dag_path, layout_ctrl.control.dag_path)
+
+    def _set_type_meta(self, value):
+        """
+        Sets the 'type' attribute of the meta node.
+
+        Args:
+            value (str): The value to set for the 'type' attribute.
+
+        Returns:
+            None
+        """
+        if hasattr(self, 'meta_node'):
+            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.type', 
+                         lock=False, type='string')
+            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.type', 
+                         value, lock=True, type='string')
+
+    def _create_meta_data(self):
+        super()._create_meta_data()
+        
+        self.data['type'] = self.type
+        self.data['parameters'] = convert_list_to_str([self.name])
+
+        self.data['top_node'] = self._top_node.dag_path
+        self.data['geometry'] = self._geometry.dag_path
+        self.data['controls'] = self._controls.dag_path
+        self.data['modules'] = self._modules.dag_path
+
+        return self.data
+
+    #... PROPERTIES ...#
     @property
     def type(self):
         return self._type
@@ -39,12 +128,7 @@ class RigContrainer(BaseObject):
     @type.setter
     def type(self, value):
         self._type = value
-
-        if hasattr(self, 'meta_node'):
-            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.type', 
-                         lock=False, type='string')
-            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.type', 
-                         value, lock=True, type='string')
+        self._set_type_meta(value)
 
     @property
     def name(self):
@@ -86,56 +170,14 @@ class RigContrainer(BaseObject):
     def modules(self, value):
         self._modules = value
 
-    def _create_top_node(self):
-        self._top_node = DagNodeData(
-            cmds.createNode('transform', name=f'{self._name}'))
-        
-    def _create_geometry(self):
-        if not cmds.objExists('geometry'):
-            self._geometry = DagNodeData(
-                cmds.createNode('transform', name='geometry'))
-            cmds.parent(self._geometry.dag_path, self._top_node.dag_path)
-        else:
-            cmds.parent('geometry', self._top_node.dag_path)
-    
-    def _create_controls(self):
-        self._controls = DagNodeData(
-                cmds.createNode('transform', name='controls'))
-        cmds.parent(self._controls.dag_path, self._top_node.dag_path)
-
-    def _create_modules(self):
-        self._modules = DagNodeData(
-                cmds.createNode('transform', name='modules'))
-        cmds.parent(self._modules.dag_path, self._top_node.dag_path)
-
-    def create_meta_data(self):
-        super().create_meta_data()
-        
-        self.data['type'] = self.type
-        self.data['parameters'] = convert_list_to_str([self.name])
-
-        self.data['top_node'] = self._top_node.dag_path
-        self.data['geometry'] = self._geometry.dag_path
-        self.data['controls'] = self._controls.dag_path
-        self.data['modules'] = self._modules.dag_path
-
-        return self.data
-
-    @classmethod
-    def from_data(cls, meta_node, data):
-        super().from_data(meta_node, data)
-        
-        cls.instance.type = data['type']
-        cls.instance.top_node = DagNodeData(data['top_node'])
-        cls.instance.geometry = DagNodeData(data['geometry'])
-        cls.instance.controls = DagNodeData(data['controls'])
-        cls.instance.modules = DagNodeData(data['modules'])
-
-        return cls.instance
 
 class RigModule(BaseObject):
 
     data = {}
+
+    def __del__(self):
+        print(f'{self.__class__.__name__} object deleted.')
+        #self.logger.info(f'{self.__class__.__name__} object deleted.')
 
     def __init__(self, name) -> None:
         super().__init__()
@@ -154,10 +196,21 @@ class RigModule(BaseObject):
         self._scale_constraints = None
 
     def create(self):
+        """
+        Creates the module.
 
-        self.initialize_modules()
-        self.data = self.create_meta_data()
-        self.create_meta_node()
+        If the metadata for the module already exists, it rebuilds the module using the existing metadata.
+        Otherwise, it initializes the modules, creates the metadata, and creates the meta node.
+
+        Returns:
+            The created module.
+        """
+        if cmds.objExists(f'{self._name}_metaData'):
+            self = MetaNode.rebuild(f'{self._name}_metaData')
+        else:
+            self.initialize_modules()
+            self.data = self.create_meta_data()
+            self.create_meta_node()
 
         return self
 
@@ -246,7 +299,9 @@ class RigModule(BaseObject):
         self._scale_constraints = value
 
     def initialize_modules(self):
-
+        """
+        Initializes the modules for the rig module.
+        """
         self.module = self.add_module(f'{self.name}_module')
         if cmds.objExists('modules'):
             cmds.parent(self.module.dag_path, 'modules')
@@ -262,23 +317,6 @@ class RigModule(BaseObject):
         self.point_constraints = self.add_module('point_constraints', parent=self.constraints)
         self.orient_constraints = self.add_module('orient_constraints', parent=self.constraints)
         self.scale_constraints = self.add_module('scale_constraints', parent=self.constraints)
-
-    
-    def add_module(self, name, parent=None, vis_switch=True):
-        
-        module = DagNodeData(cmds.createNode('transform', name=f'{name}'))
-
-        if parent:
-            cmds.parent(module.dag_path, parent.dag_path)
-
-            if vis_switch:
-                vis_name = f'{module.transform_fn.name()}_vis'
-                cmds.addAttr(parent.dag_path, longName=vis_name, attributeType='bool', keyable=True)
-                cmds.setAttr(f'{parent.dag_path}.{vis_name}', 1)
-
-                cmds.connectAttr(f'{parent.dag_path}.{vis_name}', f'{module.dag_path}.visibility')
-        
-        return module
     
     def create_meta_data(self):
         super().create_meta_data()
@@ -288,13 +326,6 @@ class RigModule(BaseObject):
         self.data['module'] = self.module.dag_path
         self.data['systems'] = self.systems.dag_path
         self.data['constraints'] = self.constraints.dag_path
-        self.data['joints'] = self.joints.dag_path
-        self.data['fk'] = self.fk.dag_path
-        self.data['ik'] = self.ik.dag_path
-        self.data['par_constraints'] = self.par_constraints.dag_path
-        self.data['point_constraints'] = self.point_constraints.dag_path
-        self.data['orient_constraints'] = self.orient_constraints.dag_path
-        self.data['scale_constraints'] = self.scale_constraints.dag_path
 
         return self.data
     
@@ -305,14 +336,7 @@ class RigModule(BaseObject):
         
         cls.instance.module = DagNodeData(data['module'])
         cls.instance.systems = DagNodeData(data['systems'])
-        cls.instance.joints = DagNodeData(data['joints'])
-        cls.instance.fk = DagNodeData(data['fk'])
-        cls.instance.ik = DagNodeData(data['ik'])
         cls.instance.constraints = DagNodeData(data['constraints'])
-        cls.instance.par_constraints = DagNodeData(data['par_constraints'])
-        cls.instance.point_constraints = DagNodeData(data['point_constraints'])
-        cls.instance.orient_constraints = DagNodeData(data['orient_constraints'])
-        cls.instance.scale_constraints = DagNodeData(data['scale_constraints'])
 
         return cls.instance
 
