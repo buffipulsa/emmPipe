@@ -12,6 +12,17 @@ class RigContrainer(BaseObject):
     """
     Represents a rig container that contains modules, controls, and metadata.
 
+    Methods:
+        Public:
+        create(): Creates the rig container.
+        from_data(cls, meta_node, data): Creates an instance of the class using the provided data.
+
+        Private:
+        _initialize_modules(): Initializes the modules for the rig container.
+        _create_controls(): Creates and sets up controls for the rig container.
+        _set_type_meta(value): Sets the 'type' attribute of the meta node.
+        _create_meta_data(): Creates metadata for the rig container.
+
     Properties:
         name (str): The name of the rig container.
         type (str): The type of the rig container.
@@ -40,7 +51,7 @@ class RigContrainer(BaseObject):
         Otherwise, it initializes the modules, creates the controls, creates the metadata, and creates the meta node.
 
         Returns:
-            The created module.
+            self: The created instance of the class.
         """      
         if cmds.objExists(f'{self._name}_metaData'):
             self = MetaNode.rebuild(f'{self._name}_metaData')
@@ -69,6 +80,9 @@ class RigContrainer(BaseObject):
     def _initialize_modules(self):
         """
         Initializes the modules for the rig container.
+
+        Returns:
+            None
         """
         self._top_node = self._add_module(self.name)
         self._geometry = self._add_module('geometry', self._top_node)
@@ -78,6 +92,9 @@ class RigContrainer(BaseObject):
     def _create_controls(self):
         """
         Creates and sets up controls for the rig container.
+
+        Returns:
+            None
         """
         global_ctrl = Control('global', 'c', '0', 'arrow1way').create()
         layout_ctrl = Control('layout', 'c', '0', 'circle').create()
@@ -122,6 +139,14 @@ class RigContrainer(BaseObject):
 
     #... PROPERTIES ...#
     @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+    
+    @property
     def type(self):
         return self._type
     
@@ -129,14 +154,6 @@ class RigContrainer(BaseObject):
     def type(self, value):
         self._type = value
         self._set_type_meta(value)
-
-    @property
-    def name(self):
-        return self._name
-    
-    @name.setter
-    def name(self, value):
-        self._name = value
 
     @property
     def top_node(self):
@@ -172,12 +189,31 @@ class RigContrainer(BaseObject):
 
 
 class RigModule(BaseObject):
+    """
+    Represents a rig module that contains systems, joints, constraints, and other components necessary for its operation.
 
-    data = {}
+    Methods:
+        Public:
+        create(): Creates the module.
+        from_data(cls, meta_node, data): Creates an instance of the class using the provided data.
 
-    def __del__(self):
-        print(f'{self.__class__.__name__} object deleted.')
-        #self.logger.info(f'{self.__class__.__name__} object deleted.')
+        Private:
+        _initialize_modules(): Initializes the modules for the rig module.
+        _create_meta_data(): Creates metadata for the rig module.
+
+    Attributes:
+        name (str): The name of the rig module.
+        module (DagNode): The module node representing the rig module.
+        systems (DagNode): The systems node representing the systems within the rig module.
+        constraints (DagNode): The constraints node representing the constraints within the rig module.
+        joints (DagNode): The joints node representing the joints within the rig module.
+        fk (DagNode): The fk node representing the fk controls within the rig module.
+        ik (DagNode): The ik node representing the ik controls within the rig module.
+        par_constraints (DagNode): The parent constraints node representing the parent constraints within the rig module.
+        point_constraints (DagNode): The point constraints node representing the point constraints within the rig module.
+        orient_constraints (DagNode): The orient constraints node representing the orient constraints within the rig module.
+        scale_constraints (DagNode): The scale constraints node representing the scale constraints within the rig module.
+    """
 
     def __init__(self, name) -> None:
         super().__init__()
@@ -195,6 +231,26 @@ class RigModule(BaseObject):
         self._orient_constraints = None
         self._scale_constraints = None
 
+    #... rest of the code ...
+class RigModule(BaseObject):
+    
+    def __init__(self, name) -> None:
+        super().__init__()
+        
+        self._name = name
+
+        self._module = None
+        self._systems = None
+        self._joints = None
+        self._fk = None
+        self._ik = None
+        self._constraints = None
+        self._par_constraints = None
+        self._point_constraints = None
+        self._orient_constraints = None
+        self._scale_constraints = None
+
+    #... PUBLIC METHODS ...#
     def create(self):
         """
         Creates the module.
@@ -203,17 +259,63 @@ class RigModule(BaseObject):
         Otherwise, it initializes the modules, creates the metadata, and creates the meta node.
 
         Returns:
-            The created module.
+            self: The created instance of the class.
         """
         if cmds.objExists(f'{self._name}_metaData'):
             self = MetaNode.rebuild(f'{self._name}_metaData')
         else:
-            self.initialize_modules()
-            self.data = self.create_meta_data()
-            self.create_meta_node()
+            self._initialize_modules()
+            self.data = self._create_meta_data()
+            self._create_meta_node(self._name)
 
         return self
 
+    @classmethod
+    def from_data(cls, meta_node, data):
+        super().from_data(meta_node, data)
+        
+        cls.instance.module = DagNodeData(data['module'])
+        cls.instance.systems = DagNodeData(data['systems'])
+        cls.instance.constraints = DagNodeData(data['constraints'])
+
+        return cls.instance
+
+    #... PRIVATE METHODS ...#
+    def _initialize_modules(self):
+        """
+        Initializes the modules for the rig module.
+
+        Returns:
+            None
+        """
+        self.module = self._add_module(f'{self.name}_module')
+        if cmds.objExists('modules'):
+            cmds.parent(self.module.dag_path, 'modules')
+
+        self.systems = self._add_module('systems', parent=self.module)
+        self.constraints = self._add_module('constraints', parent=self.module)
+
+        self.joints = self._add_module('joints', parent=self.systems)
+        self.fk = self._add_module('fk', parent=self.systems)
+        self.ik = self._add_module('ik', parent=self.systems)
+
+        self.par_constraints = self._add_module('parent_constraints', parent=self.constraints)
+        self.point_constraints = self._add_module('point_constraints', parent=self.constraints)
+        self.orient_constraints = self._add_module('orient_constraints', parent=self.constraints)
+        self.scale_constraints = self._add_module('scale_constraints', parent=self.constraints)
+    
+    def _create_meta_data(self):
+        super()._create_meta_data()
+        
+        self.data['parameters'] = convert_list_to_str([self.name])
+        
+        self.data['module'] = self.module.dag_path
+        self.data['systems'] = self.systems.dag_path
+        self.data['constraints'] = self.constraints.dag_path
+
+        return self.data
+
+    #... PROPERTIES ...#
     @property
     def name(self):
         return self._name
@@ -297,46 +399,4 @@ class RigModule(BaseObject):
     @scale_constraints.setter
     def scale_constraints(self, value):
         self._scale_constraints = value
-
-    def initialize_modules(self):
-        """
-        Initializes the modules for the rig module.
-        """
-        self.module = self.add_module(f'{self.name}_module')
-        if cmds.objExists('modules'):
-            cmds.parent(self.module.dag_path, 'modules')
-
-        self.systems = self.add_module('systems', parent=self.module)
-        self.constraints = self.add_module('constraints', parent=self.module)
-
-        self.joints = self.add_module('joints', parent=self.systems)
-        self.fk = self.add_module('fk', parent=self.systems)
-        self.ik = self.add_module('ik', parent=self.systems)
-
-        self.par_constraints = self.add_module('parent_constraints', parent=self.constraints)
-        self.point_constraints = self.add_module('point_constraints', parent=self.constraints)
-        self.orient_constraints = self.add_module('orient_constraints', parent=self.constraints)
-        self.scale_constraints = self.add_module('scale_constraints', parent=self.constraints)
-    
-    def create_meta_data(self):
-        super().create_meta_data()
-        
-        self.data['parameters'] = convert_list_to_str([self.name])
-        
-        self.data['module'] = self.module.dag_path
-        self.data['systems'] = self.systems.dag_path
-        self.data['constraints'] = self.constraints.dag_path
-
-        return self.data
-    
-
-    @classmethod
-    def from_data(cls, meta_node, data):
-        super().from_data(meta_node, data)
-        
-        cls.instance.module = DagNodeData(data['module'])
-        cls.instance.systems = DagNodeData(data['systems'])
-        cls.instance.constraints = DagNodeData(data['constraints'])
-
-        return cls.instance
 

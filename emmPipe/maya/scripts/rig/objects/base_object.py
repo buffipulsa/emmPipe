@@ -8,6 +8,18 @@ from dev.logging.logger import Logger
 class BaseObject:
     """
     Base class for objects in the scene.
+
+    Methods:
+        Public:
+        from_data(cls, meta_node, data): Creates an instance of the class using the provided data.
+        
+        Private:
+        _add_module(name, parent=None, vis_switch=True): Adds a module to the scene.
+        _create_meta_data(): Creates metadata for the object.
+        _create_meta_node(name): Creates a meta node with the given name and assigns it to the `_meta_node` attribute.
+
+    Properties:
+        meta_node (str): The meta node associated with the instance.
     """
     def __init__(self) -> None:
         self.logger = Logger(__name__)
