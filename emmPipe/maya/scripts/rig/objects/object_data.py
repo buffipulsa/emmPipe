@@ -37,30 +37,7 @@ class DependencyNodeData:
 
         self._check_if_dag_or_depend_node()
 
-    @property
-    def m_obj(self):
-        """
-        Returns the MObject associated with this object.
-
-        Returns:
-            MObject: The MObject associated with this object.
-        """
-        self._m_obj = self._get_m_obj()
-
-        return self._m_obj
-    
-    @property
-    def dependnode_fn(self):
-        """
-        Returns the MFnDependencyNode object associated with this object.
-
-        Returns:
-            om.MFnDependencyNode: The MFnDependencyNode object.
-        """
-        self._dependnode_fn = self._get_dependnode_fn()
-
-        return self._dependnode_fn
-
+    #... Private methods ...#
     def _check_if_dag_or_depend_node(self):
         """
         Checks if the node is a DAG node or a dependency node.
@@ -91,6 +68,31 @@ class DependencyNodeData:
             om.MFnDependencyNode: The MFnDependencyNode object.
         """
         self._dependnode_fn = om.MFnDependencyNode(self._m_obj)
+        return self._dependnode_fn
+
+    #... Properties ...#
+    @property
+    def m_obj(self):
+        """
+        Returns the MObject associated with this object.
+
+        Returns:
+            MObject: The MObject associated with this object.
+        """
+        self._m_obj = self._get_m_obj()
+
+        return self._m_obj
+    
+    @property
+    def dependnode_fn(self):
+        """
+        Returns the MFnDependencyNode object associated with this object.
+
+        Returns:
+            om.MFnDependencyNode: The MFnDependencyNode object.
+        """
+        self._dependnode_fn = self._get_dependnode_fn()
+
         return self._dependnode_fn
 
 
@@ -142,83 +144,7 @@ class DagNodeData(DependencyNodeData):
                 self._vtx_ids = self._get_vtx_ids()
                 self._vtx_counts = self._get_vtx_counts()
 
-    @property
-    def dag_path(self):
-        """
-        Retrieves the MDagPath for the node.
-
-        Returns:
-            om.MDagPath: The MDagPath for the node.
-        """
-        self._dag_path = self._get_dag_path()
-        return self._dag_path
-        
-    @property
-    def shapes(self):
-        """
-        Retrieves the shape node for the node.
-
-        Returns:
-            List[om.MObject]: List of shape nodes for the node.
-        """
-        self._shapes = self._get_shapes()
-        return self._shapes
-
-    @property
-    def transform_fn(self):
-        """
-        Retrieves the MFnTransform for the node.
-
-        Returns:
-            om.MFnTransform: The MFnTransform for the node.
-        """
-        self._transform_fn = self._get_transform_fn()
-        return self._transform_fn
-    
-    @property
-    def shapes_fn(self):
-        """
-        Retrieves the MFnMesh, MFnNurbsCurve, or MFnNurbsSurface for the shape node.
-
-        Returns:
-            om.MFnMesh or om.MFnNurbsCurve or om.MFnNurbsSurface: The function set for the shape node.
-        """
-        self._shapes_fn = self._get_shapes_fn()
-        return self._shapes_fn
-
-    @property
-    def vtx_component(self):
-        """
-        Retrieves the vertex component for the shape node.
-
-        Returns:
-            om.MObject: The vertex component for the shape node.
-        """
-        self._vtx_component = self._get_vtx_component()
-        return self._vtx_component
-    
-    @property
-    def vtx_ids(self):
-        """
-        Retrieves the vertex IDs for the shape node.
-
-        Returns:
-            list: The vertex IDs for the shape node.
-        """
-        self._vtx_ids = self._get_vtx_ids()
-        return self._vtx_ids
-    
-    @property
-    def vtx_counts(self):
-        """
-        Retrieves the vertex count for the shape node.
-
-        Returns:
-            int: The vertex count for the shape node.
-        """
-        self._vtx_counts = self._get_vtx_count()
-        return self._vtx_counts
-
+    #... Private methods ...#
     def _check_if_dag_or_depend_node(self):
         """
         Checks if the node is a DAG node or a dependency node.
@@ -388,6 +314,84 @@ class DagNodeData(DependencyNodeData):
         else:
             return None
 
+    #... Properties ...#
+    @property
+    def dag_path(self):
+        """
+        Retrieves the MDagPath for the node.
+
+        Returns:
+            om.MDagPath: The MDagPath for the node.
+        """
+        self._dag_path = self._get_dag_path()
+        return self._dag_path
+        
+    @property
+    def shapes(self):
+        """
+        Retrieves the shape node for the node.
+
+        Returns:
+            List[om.MObject]: List of shape nodes for the node.
+        """
+        self._shapes = self._get_shapes()
+        return self._shapes
+
+    @property
+    def transform_fn(self):
+        """
+        Retrieves the MFnTransform for the node.
+
+        Returns:
+            om.MFnTransform: The MFnTransform for the node.
+        """
+        self._transform_fn = self._get_transform_fn()
+        return self._transform_fn
+    
+    @property
+    def shapes_fn(self):
+        """
+        Retrieves the MFnMesh, MFnNurbsCurve, or MFnNurbsSurface for the shape node.
+
+        Returns:
+            om.MFnMesh or om.MFnNurbsCurve or om.MFnNurbsSurface: The function set for the shape node.
+        """
+        self._shapes_fn = self._get_shapes_fn()
+        return self._shapes_fn
+
+    @property
+    def vtx_component(self):
+        """
+        Retrieves the vertex component for the shape node.
+
+        Returns:
+            om.MObject: The vertex component for the shape node.
+        """
+        self._vtx_component = self._get_vtx_component()
+        return self._vtx_component
+    
+    @property
+    def vtx_ids(self):
+        """
+        Retrieves the vertex IDs for the shape node.
+
+        Returns:
+            list: The vertex IDs for the shape node.
+        """
+        self._vtx_ids = self._get_vtx_ids()
+        return self._vtx_ids
+    
+    @property
+    def vtx_counts(self):
+        """
+        Retrieves the vertex count for the shape node.
+
+        Returns:
+            int: The vertex count for the shape node.
+        """
+        self._vtx_counts = self._get_vtx_count()
+        return self._vtx_counts
+
 
 class MetaNode:
     """
@@ -414,16 +418,7 @@ class MetaNode:
 
         self._create_attrs()
 
-    @property
-    def name(self):
-        """
-        Gets the name of the meta node.
-
-        Returns:
-            str: The name of the meta node.
-        """
-        return self.meta_node
-    
+    #... Public methods ...#
     @classmethod
     def rebuild(cls, meta_node):
         """
@@ -439,6 +434,7 @@ class MetaNode:
 
         return deserialize_meta_node.rebuild()
 
+    #... Private methods ...#
     def _create_attrs(self):
         """
         Creates attributes on the meta node based on the provided data.
@@ -483,6 +479,16 @@ class MetaNode:
 
                     cmds.connectAttr(f'{data.fullPathName()}.message', f'{self.meta_node}.{attr_name}')
 
+    #... Properties ...#
+    @property
+    def name(self):
+        """
+        Gets the name of the meta node.
+
+        Returns:
+            str: The name of the meta node.
+        """
+        return self.meta_node
 
     
 class DeserializeMetaNode:
@@ -515,20 +521,23 @@ class DeserializeMetaNode:
         """
         self.meta_node = DependencyNodeData(meta_node)
         self._data = {}
-        self.deseriazlie_data()
+        self._deseriazlie_data()
         self._class = self._get_class()
 
-    @property
-    def data(self):
+    #... Public methods ...#
+    def rebuild(self):
         """
-        Gets the serialized data.
+        Rebuilds the class instance from the serialized data.
 
         Returns:
-            The serialized data.
+            The rebuilt class instance.
         """
-        return self._data
+        class_instance = self._class.from_data(self.meta_node, self.data)
+            
+        return class_instance
 
-    def deseriazlie_data(self):
+    #... Private methods ...#
+    def _deseriazlie_data(self):
         """
         Deserializes the data from the meta node.
         """
@@ -537,16 +546,16 @@ class DeserializeMetaNode:
         attrs_fn = [attr.apiTypeStr for attr in attrs_mobj]
         
         for attr, attr_fn in zip(attrs_mobj, attrs_fn):
-            attr_name = self.get_attribute_name(attr)
+            attr_name = self._get_attribute_name(attr)
 
             if attr_fn == 'kMessageAttribute':
-                self._data[attr_name] = self.deserialize_message_attr(attr)
+                self._data[attr_name] = self._deserialize_message_attr(attr)
             if attr_fn == 'kTypedAttribute':
-                self._data[attr_name] = self.deserialize_typed_attr(attr)
+                self._data[attr_name] = self._deserialize_typed_attr(attr)
             if attr_fn == 'kNumericAttribute':
-                self._data[attr_name] = self.deserialize_numeric_attr(attr)
+                self._data[attr_name] = self._deserialize_numeric_attr(attr)
 
-    def get_attribute_name(self, attr):
+    def _get_attribute_name(self, attr):
         """
         Gets the attribute name from the given attribute.
 
@@ -558,7 +567,7 @@ class DeserializeMetaNode:
         """
         return self.meta_node.dependnode_fn.findPlug(attr, True).partialName()
     
-    def deserialize_message_attr(self, attr):
+    def _deserialize_message_attr(self, attr):
         """
         Deserializes a message attribute.
 
@@ -575,7 +584,7 @@ class DeserializeMetaNode:
 
         return connected_node.dag_path
 
-    def deserialize_typed_attr(self, attr):
+    def _deserialize_typed_attr(self, attr):
         """
         Deserializes a typed attribute.
 
@@ -589,7 +598,7 @@ class DeserializeMetaNode:
 
         return string_plug.asString()
 
-    def deserialize_numeric_attr(self, attr):
+    def _deserialize_numeric_attr(self, attr):
         """
         Deserializes a numeric attribute.
 
@@ -619,13 +628,13 @@ class DeserializeMetaNode:
     
         return class_
 
-    def rebuild(self):
+    #... Properties ...#
+    @property
+    def data(self):
         """
-        Rebuilds the class instance from the serialized data.
+        Gets the serialized data.
 
         Returns:
-            The rebuilt class instance.
+            The serialized data.
         """
-        class_instance = self._class.from_data(self.meta_node, self.data)
-            
-        return class_instance
+        return self._data
