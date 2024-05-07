@@ -1,6 +1,5 @@
 
 import os
-import json
 import pickle
 import gzip
 
@@ -14,7 +13,6 @@ class SkinclusterData(DagNodeData):
     """
     Class representing skin cluster data.
     """
-
     def __init__(self, node=None, skincluster_node=None):
         """
         Initialize the SkinclusterData object.
@@ -30,42 +28,22 @@ class SkinclusterData(DagNodeData):
 
         self._skincluster = self._get_skincluster() if not skincluster_node else skincluster_node
 
+        self._skincluster_fn = self._get_skincluster_fn()
+        self._influence_names = self._get_influence_names()
+        self._influence_indices = self._get_influence_indicies()
+        self._weights = self._get_weights()
+        self._blend_weights = self._get_blend_weights()
+        self._bind_pre_matrix_values = self._get_bind_pre_matrix_values()
+        self._bind_pre_matrix_inputs = self._get_bind_pre_matrix_inputs()
+        self._envelope = self._get_envelope()
+        self._skinning_method = self._get_skinning_methods()
+        self._use_components = self._get_use_components()
+        self._normalize_weights = self._get_normalize_weights()
+        self._deform_user_normals = self._get_deform_user_normals()
+
         return
     
-    def _get_skincluster_attr_value(self, attr):
-        """
-        Get the value of the specified attribute for the skin cluster.
-
-        Args:
-            attr (str): The name of the attribute.
-
-        Returns:
-            The value of the specified attribute for the skin cluster.
-        """
-        attr_value = cmds.getAttr('{}.{}'.format(self.skincluster, attr))
-        return attr_value
-
-    @property
-    def skincluster_name(self):
-        """
-        Get the name of the skincluster node.
-
-        Returns:
-            str: The name of the skincluster node.
-        """
-        return self._skincluster
-
-    @property
-    def skincluster(self):
-        """
-        Get the name of the skincluster node.
-
-        Returns:
-            str: The name of the skincluster node.
-        """
-        self._skincluster_node = self._get_skincluster()
-        return self._skincluster_node
-
+    #... Private Methods ...#
     def _get_skincluster(self):
         """
         Returns the skincluster node associated with the shape node.
@@ -95,37 +73,36 @@ class SkinclusterData(DagNodeData):
                             .format(self.dag_path.partialPathName()))
 
         return skincls
-
-    @property
-    def skincluster_fn(self):
+    
+    def _get_skincluster_fn(self):
         """
-        Returns the MFnSkinCluster object associated with the skin cluster.
+        Gets the MFnSkinCluster object associated with the skin cluster.
 
-        :return: The MFnSkinCluster object.
+        Returns:
+            The MFnSkinCluster object.
         """
         skincluster_mobj = om.MGlobal.getSelectionListByName(self.skincluster).getDependNode(0)
         skincls_fn = oma.MFnSkinCluster(skincluster_mobj)
 
         return skincls_fn
-
-    @property
-    def influence_names(self):
+    
+    def _get_influence_names(self):
         """
         Returns a list of names of the influence objects in the skin cluster.
 
         Returns:
-            list: A list of strings representing the names of the influence objects.
+            A list of strings representing the names of the influence objects.
         """
         influence_names = [infl.partialPathName() for infl in self.skincluster_fn.influenceObjects()]
 
         return influence_names
-
-    @property
-    def influence_indices(self):
+    
+    def _get_influence_indicies(self):
         """
         Returns the indices of the influences in the skin cluster.
 
-        :return: A list of integers representing the indices of the influences.
+        Returns:
+            A list of integers representing the indices of the influences.
         """
         m_obj_influences = self.skincluster_fn.influenceObjects()
 
@@ -134,9 +111,8 @@ class SkinclusterData(DagNodeData):
             influences.append(influence)
 
         return influences
-
-    @property
-    def weights(self):
+    
+    def _get_weights(self):
         """
         Returns the skin weights for the specified vertex component.
 
@@ -144,10 +120,10 @@ class SkinclusterData(DagNodeData):
             list: The skin weights for the vertex component.
         """
         weights, _ = self.skincluster_fn.getWeights(self.shapes[0], self.vtx_component[0])
+        
         return weights
-
-    @property
-    def blend_weights(self):
+    
+    def _get_blend_weights(self):
         """
         Get the blend weights for the skin cluster.
 
@@ -157,32 +133,31 @@ class SkinclusterData(DagNodeData):
         blendWeights = self.skincluster_fn.getBlendWeights(self.shapes[0], self.vtx_component[0])
 
         return blendWeights
-
-    @property
-    def bind_pre_matrix_values(self):
+    
+    def _get_bind_pre_matrix_values(self):
         """
         Returns a list of bind pre-matrix values for each influence in the skin cluster.
 
-        :return: List of bind pre-matrix values.
+        Returns:
+            List of bind pre-matrix values.
         """
         bindPrematrix_values = [cmds.getAttr('{}.bindPreMatrix[{}]'.format(self.skincluster, i)) for i in self.influence_indices]
-        return bindPrematrix_values
 
-    @property
-    def bind_pre_matrix_inputs(self):
+        return bindPrematrix_values
+    
+    def _get_bind_pre_matrix_inputs(self):
         """
         Returns a list of connections to the 'bindPreMatrix' attribute of the skin cluster node.
 
-        :return: List of connections to the 'bindPreMatrix' attribute.
-        :rtype: list
+        Returns:
+            List of connections to the 'bindPreMatrix' attribute.
         """
         bindPreMatrixInputs = cmds.listConnections('{}.bindPreMatrix'.format(self.skincluster),
                                                    source=True, destination=False) or []
 
         return bindPreMatrixInputs
-    
-    @property
-    def envelope(self):
+
+    def _get_envelope(self):
         """
         Get the envelope value of the skin cluster.
 
@@ -190,21 +165,21 @@ class SkinclusterData(DagNodeData):
             float: The envelope value.
         """
         envelope = cmds.getAttr('{}.envelope'.format(self.skincluster))
+
         return envelope
     
-    @property
-    def skinning_method(self):
+    def _get_skinning_methods(self):
         """
         Returns the skinning method used by the skin cluster.
 
-        :return: The skinning method.
-        :rtype: str
+        Returns:
+            The skinning method.
         """
         skinningMethod = cmds.getAttr('{}.skinningMethod'.format(self.skincluster))
+        
         return skinningMethod
     
-    @property
-    def use_components(self):
+    def _get_use_components(self):
         """
         Returns the value of the 'useComponents' attribute of the skin cluster.
 
@@ -212,29 +187,83 @@ class SkinclusterData(DagNodeData):
             bool: The value of the 'useComponents' attribute.
         """
         useComponents = cmds.getAttr('{}.useComponents'.format(self.skincluster))
+
         return useComponents
     
-    @property
-    def normalize_weights(self):
+    def _get_normalize_weights(self):
         """
         Returns the value of the 'normalizeWeights' attribute of the skin cluster.
 
-        :return: The value of the 'normalizeWeights' attribute.
-        :rtype: bool
+        Returns:
+            The value of the 'normalizeWeights' attribute.
         """
         normalizeWeights = cmds.getAttr('{}.normalizeWeights'.format(self.skincluster))
+
         return normalizeWeights
     
-    @property
-    def deform_user_normals(self):
+    def _get_deform_user_normals(self):
         """
         Returns the value of the 'deformUserNormals' attribute of the skin cluster.
 
-        :return: The value of the 'deformUserNormals' attribute.
-        :rtype: bool
+        Returns:
+            The value of the 'deformUserNormals' attribute.
         """
         deformUserNormals = cmds.getAttr('{}.deformUserNormals'.format(self.skincluster))
+
         return deformUserNormals
+
+    #... Properties ...#
+    @property
+    def skincluster(self):
+        return self._skincluster
+
+    @property
+    def skincluster_fn(self):
+        return self._skincluster_fn
+
+    @property
+    def influence_names(self):
+        return self._influence_names
+
+    @property
+    def influence_indices(self):
+        return self._influence_indices
+
+    @property
+    def weights(self):
+        return self._weights
+
+    @property
+    def blend_weights(self):
+        return self._blend_weights
+
+    @property
+    def bind_pre_matrix_values(self):
+        return self._bind_pre_matrix_values
+
+    @property
+    def bind_pre_matrix_inputs(self):
+        return self._bind_pre_matrix_inputs
+    
+    @property
+    def envelope(self):
+        return self._envelope
+    
+    @property
+    def skinning_method(self):
+        return self._skinning_method
+
+    @property
+    def use_components(self):
+        return self._use_components
+
+    @property
+    def normalize_weights(self):
+        return self._normalize_weights
+
+    @property
+    def deform_user_normals(self):
+        return self._deform_user_normals
 
 
 def save_skincluster_data(node, path):
@@ -256,7 +285,6 @@ def save_skincluster_data(node, path):
     c_skincluster_data = SkinclusterData(node)
 
     data = {'skincluster': c_skincluster_data.skincluster,
-            # 'skincluster_name': c_skincluster_data.skincluster_name,
             'influence_names': c_skincluster_data.influence_names,
             'influence_indices': list(c_skincluster_data.influence_indices),
             'bind_pre_matrix_values': c_skincluster_data.bind_pre_matrix_values,
