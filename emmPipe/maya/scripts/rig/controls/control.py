@@ -36,6 +36,7 @@ class Control(BaseObject):
 
         self._meta_node = None
 
+    #... Public methods ...#
     def create(self):
         """
         Creates the control.
@@ -68,63 +69,37 @@ class Control(BaseObject):
             self.data = self._create_meta_data()
             self._create_meta_node(f'{self._combined_name}_ctrl')
 
-            if self._side   == 'l': self.color = 'blue'
-            elif self._side == 'r': self.color = 'red'
-            else:                   self.color = 'yellow'
+            if self._side   == 'l': self._color = 'blue'
+            elif self._side == 'r': self._color = 'red'
+            else:                   self._color = 'yellow'
 
         return self
-    
-    @property
-    def meta_node(self):
-        return self._meta_node
-    
-    @meta_node.setter
-    def meta_node(self, value):
-        self._meta_node = value
 
-    @property
-    def control(self):
-        return self._ctrl
-    
-    @control.setter
-    def control(self, value):
-        self._ctrl = value
+    def lock_transforms(self, node, chs='trs', axis='xyz', unlock=False):
+        """
+        Locks or unlocks the specified transform attributes of a given node.
 
-    @property
-    def offset(self):
-        return self._offset
+        Args:
+            node (str): The name of the node to lock/unlock the transform attributes for.
+            chs (str, optional): The transform channels to lock/unlock. Defaults to 'trs'.
+            axis (str, optional): The axes to lock/unlock. Defaults to 'xyz'.
+            unlock (bool, optional): If True, unlocks the specified attributes. If False, locks them. Defaults to False.
+        """
+        [cmds.setAttr(f'{self._ctrl.dag_path}.{ch}{ax}', lock=not unlock) for ch in chs for ax in axis]
     
-    @offset.setter
-    def offset(self, value):
-        self._offset = value
+    @classmethod
+    def from_data(cls, meta_node, data):
+        super().from_data(meta_node, data)
+        
+        cls.instance.control = DagNodeData(data['control'])
+        cls.instance.offset = DagNodeData(data['offset'])
+        cls.instance.thickness = float(data['thickness'])
+        cls.instance.color = data['color']
 
-    @property
-    def color(self):
-        return self._color
+        return cls.instance
     
-    @color.setter
-    def color(self, value):            
-        self._color = self.set_color(value)
-
-    @property
-    def thickness(self):
-        return self._thickness
-    
-    @thickness.setter
-    def thickness(self, value):
-        self._thickness = value
-        self.set_thickness(self._thickness)
-    
-    @property
-    def scale(self):
-        return self._scale
-    
-    @scale.setter
-    def scale(self, value):
-        self._scale = value
-        self.set_scale(self._scale)
-
-    def set_color(self, value):
+    #... Private methods ...#
+    def _set_color(self, value):
         """
         Sets the color of the control.
 
@@ -158,7 +133,7 @@ class Control(BaseObject):
         
         return color
 
-    def set_thickness(self, value):  
+    def _set_thickness(self, value):  
         """
         Sets the thickness of the control's shapes.
 
@@ -179,7 +154,7 @@ class Control(BaseObject):
             cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.thickness', lock=False)
             cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.thickness', value, lock=True)
 
-    def set_scale(self, value):
+    def _set_scale(self, value):
         """
         Sets the scale of the control.
 
@@ -200,18 +175,6 @@ class Control(BaseObject):
         if hasattr(self, 'meta_node'):
             cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.scale', lock=False)
             cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.scale', value, lock=True)
-    
-    def lock_transforms(self, node, chs='trs', axis='xyz', unlock=False):
-        """
-        Locks or unlocks the specified transform attributes of a given node.
-
-        Args:
-            node (str): The name of the node to lock/unlock the transform attributes for.
-            chs (str, optional): The transform channels to lock/unlock. Defaults to 'trs'.
-            axis (str, optional): The axes to lock/unlock. Defaults to 'xyz'.
-            unlock (bool, optional): If True, unlocks the specified attributes. If False, locks them. Defaults to False.
-        """
-        [cmds.setAttr(f'{self._ctrl.dag_path}.{ch}{ax}', lock=not unlock) for ch in chs for ax in axis]
 
     def _create_meta_data(self):
         super()._create_meta_data()
@@ -231,16 +194,56 @@ class Control(BaseObject):
 
         return self.data
 
-    @classmethod
-    def from_data(cls, meta_node, data):
-        super().from_data(meta_node, data)
-        
-        cls.instance.control = DagNodeData(data['control'])
-        cls.instance.offset = DagNodeData(data['offset'])
-        cls.instance.thickness = float(data['thickness'])
-        cls.instance.color = data['color']
+    #... Properties ...#
+    @property
+    def meta_node(self):
+        return self._meta_node
+    
+    @meta_node.setter
+    def meta_node(self, value):
+        self._meta_node = value
 
-        return cls.instance
+    @property
+    def control(self):
+        return self._ctrl
+    
+    @control.setter
+    def control(self, value):
+        self._ctrl = value
+
+    @property
+    def offset(self):
+        return self._offset
+    
+    @offset.setter
+    def offset(self, value):
+        self._offset = value
+
+    @property
+    def color(self):
+        return self._color
+    
+    @color.setter
+    def color(self, value):            
+        self._color = self._set_color(value)
+
+    @property
+    def thickness(self):
+        return self._thickness
+    
+    @thickness.setter
+    def thickness(self, value):
+        self._thickness = value
+        self._set_thickness(self._thickness)
+    
+    @property
+    def scale(self):
+        return self._scale
+    
+    @scale.setter
+    def scale(self, value):
+        self._scale = value
+        self._set_scale(self._scale)
     
 
 class ControlShapes:
@@ -417,7 +420,7 @@ class ControlShapes:
         return cls.create_shape(name, [pos, pos2, pos3], 3, True)
 
     @classmethod
-    def diamond(cls):
+    def diamond(cls, name):
         """ diamond shape """
 
         pos = []
