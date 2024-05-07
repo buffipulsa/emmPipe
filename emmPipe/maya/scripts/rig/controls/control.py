@@ -1,10 +1,8 @@
 
 import maya.cmds as cmds
-import maya.api.OpenMaya as om
 
 from dev.utils import convert_list_to_str
 
-#from rig.controls.control_shapes import ControlShapes
 from rig.objects.base_object import BaseObject
 from rig.objects.object_data import DagNodeData, MetaNode
 
