@@ -71,6 +71,8 @@ class Control(BaseObject):
             elif self._side == 'r': self._color = 'red'
             else:                   self._color = 'yellow'
 
+            self._set_color(self._color)
+
         return self
 
     def lock_transforms(self, node, chs='trs', axis='xyz', unlock=False):

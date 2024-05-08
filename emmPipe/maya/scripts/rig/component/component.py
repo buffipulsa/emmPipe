@@ -421,8 +421,8 @@ class Component:
                     else:
                         attr_value = cmds.getAttr(grp + '.' + attr)
                         values_dict[attr] = attr_value
+
             data = {grp: values_dict}
-            # data[grp] = values_dict
 
             file_out = open('{}/{}.json'.format(full_path, grp), 'w')
             json.dump(data, file_out, indent=2)

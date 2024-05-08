@@ -3,7 +3,6 @@ import maya.cmds as cmds
 
 from ..joints.joints import Joints
 from ..controls.control import Control
-from ..objects import object_utils as ou
 
 class Osseous:
 

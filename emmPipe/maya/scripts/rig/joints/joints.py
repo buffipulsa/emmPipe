@@ -1,8 +1,6 @@
 
 import maya.cmds as cmds
 
-from ..objects import object_utils as ou
-
 class Joints:
     """
     Represents a joint chain in the scene.
@@ -85,7 +83,7 @@ class Joints:
             for i in range(self.num_joints)]
 
         self._mark_as_joint(self._joints)
-        self._mark_joint_index(self._joints)
+        #self._mark_joint_index(self._joints)
 
         [cmds.parent(self._joints[i + 1], self._joints[i]) for i in range(len(self._joints) - 1)]
         
