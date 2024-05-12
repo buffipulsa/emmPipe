@@ -14,6 +14,7 @@ from .widgets.model_widget import ModelWidget
 from .widgets.rig_widget.rig_widget import RigWidget
 
 from rig.component import component
+from controller.rig_build.base_build import BaseBuild
 
 
 class MainUI(DockableUI):

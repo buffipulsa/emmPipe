@@ -22,9 +22,10 @@ class BaseObject:
         meta_node (str): The meta node associated with the instance.
     """
     def __init__(self) -> None:
-        self.logger = Logger(__name__)
-        self.logger.level = 'DEBUG'
+        # self.logger = Logger(__name__)
+        # self.logger.level = 'DEBUG'
         self._meta_node = None
+        self._meta_node_name = None
 
     #... PUBLIC METHODS ...#
     @classmethod
@@ -40,7 +41,12 @@ class BaseObject:
         Returns:
             instance: The created instance of the class.
         """
-        cls.instance = cls(*convert_str_to_list(data['parameters']))
+        if 'parameters' in data.keys():
+            parameters = convert_str_to_list(data['parameters'])
+            if 'None' in parameters: parameters[parameters.index('None')] = None
+            cls.instance = cls(*parameters)
+        else:
+            cls.instance = cls()
         cls.instance.meta_node = meta_node
 
         return cls.instance
@@ -83,7 +89,7 @@ class BaseObject:
         self.data['class_module'] = str(self.__class__.__module__)
         self.data['class_name'] = str(self.__class__.__name__)
 
-        self.logger.info(f'Creating metadata for {self.__class__.__name__} object.')
+        #self.logger.info(f'Creating metadata for {self.__class__.__name__} object.')
 
         return self.data
     
@@ -98,6 +104,7 @@ class BaseObject:
             None
         """
         self._meta_node = DependencyNodeData(MetaNode(name, self.data).name)
+        self._meta_node_name = self._meta_node.dependnode_fn.name()
 
     #... PROPERTIES ...#
     @property
@@ -107,5 +114,13 @@ class BaseObject:
     @meta_node.setter
     def meta_node(self, value):
         self._meta_node = value
+
+    @property
+    def meta_node_name(self):
+        return self._meta_node_name
+
+    @meta_node_name.setter
+    def meta_node_name(self, value):
+        self._meta_node_name = value
 
     

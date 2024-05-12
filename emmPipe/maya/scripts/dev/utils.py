@@ -5,7 +5,7 @@ import maya.mel as mel
 
 # if you have some packages that you often reload, you can put them here
 # and they will get reloaded if "packages" attribute is not explicitly stated
-DEFAULT_RELOAD_PACKAGES = ['rig', 'dev', 'ui'] 
+DEFAULT_RELOAD_PACKAGES = ['rig', 'dev', 'ui', 'controller'] 
 
 def unload_packages(silent=True, packages=None):
     """

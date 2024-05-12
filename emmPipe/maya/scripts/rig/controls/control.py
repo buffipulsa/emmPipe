@@ -14,15 +14,16 @@ class Control(BaseObject):
     
     COLORS = {'red': 13, 'blue': 6, 'yellow': 17}
 
-    def __init__(self, name, side, index, shape):
+    def __init__(self, name, side, desc, index, shape):
         super().__init__()
 
         self._name = name
         self._side = side
+        self._desc = desc
         self._index = index
         self._shape = shape
 
-        self._combined_name = f'{self._name}_{self._side}_{str(self._index).zfill(3)}'
+        self._combined_name = f'{self._name}_{self._side}_{self._desc}_{str(self._index).zfill(3)}'
         
         self._ctrl = None
         self._offset = None
@@ -58,7 +59,7 @@ class Control(BaseObject):
                 raise ValueError(f'Please pick a control shape. Available shapes: {self.SHAPES}')
             
             self._offset = DagNodeData(cmds.createNode('transform', 
-                                        name=f'{self._combined_name}_offset'))
+                                        name=f'{self._combined_name}_hrc'))
 
             cmds.parent(self._ctrl.dag_path, self._offset.dag_path)
 
@@ -179,7 +180,11 @@ class Control(BaseObject):
     def _create_meta_data(self):
         super()._create_meta_data()
 
-        self.data['parameters'] = convert_list_to_str([self._name,self._side,self._index,self._shape])
+        self.data['parameters'] = convert_list_to_str([self._name,
+                                                                    self._side,
+                                                                    self._desc,
+                                                                    self._index,
+                                                                    self._shape])
 
         self.data['control'] = self._ctrl.dag_path
         self.data['offset'] = self._offset.dag_path
@@ -298,7 +303,7 @@ class ControlShapes:
         """
         square shape
         """
-        print('test')
+
         pos = []
         pos.append((-1.000000, 0.000000, 1.000000))
         pos.append((-1.000000, 0.000000, -1.000000))
@@ -324,7 +329,6 @@ class ControlShapes:
     def box(cls, name):
         """ box shape """
 
-        print('test')
         pos = []
         pos.append( ( 0.500000, 0.499745, 0.500000 ) )
         pos.append( ( -0.500000, 0.499745, 0.500000 ) )

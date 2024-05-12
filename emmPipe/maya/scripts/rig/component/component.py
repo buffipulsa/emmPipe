@@ -6,6 +6,7 @@ import shutil
 import maya.cmds as cmds
 
 from rig.deformers import skincluster, ngSkinToolsData 
+from rig.objects.object_data import DagNodeData
 
 
 class Component:
@@ -88,8 +89,17 @@ class Component:
         Returns:
             None
         """
-        print(self.get_file_path('model'))
-        cmds.file(self.get_file_path('model'), i=True)
+        if cmds.objExists('geometry'):
+            geometry_grp = DagNodeData('geometry')
+            geometry_temp_name = cmds.rename(geometry_grp.dag_path, 'geometry_temp')
+            cmds.file(self.get_file_path('model'), i=True)
+            geometry_content = cmds.listRelatives('geometry', children=True, fullPath=True)
+            cmds.parent(geometry_content, 'geometry_temp')
+            cmds.delete('geometry')
+            cmds.rename('geometry_temp', 'geometry')
+
+        else:
+            cmds.file(self.get_file_path('model'), i=True)
 
         print('#' * 50)
         print('Imported model component from: {}'.format(self.get_file_path('model')))
@@ -518,7 +528,9 @@ class Component:
         Returns:
             str: The path of the component.
         """
+        print(self.project_path)
         component_path = os.path.join(self.project_path, component)
+        print(component_path)
         if not os.path.exists(component_path):
             os.makedirs(component_path)
 

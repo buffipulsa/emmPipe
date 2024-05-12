@@ -33,7 +33,7 @@ global proc shelf_emmPipe () {
         -style "iconOnly" 
         -marginWidth 0
         -marginHeight 1
-        -command "import maya.cmds as cmds\n\nfrom dev.utils import unload_packages\nunload_packages(silent=False, packages=[\"ui\",\"dev\",\"rig\"])\n\nimport ui, dev, rig\nfrom ui.main.main_ui import MainUI\n\nif cmds.workspaceControl(MainUI.get_workspace_control_name(), q=True, exists=True):\n    cmds.deleteUI(MainUI.get_workspace_control_name())\n    \n    print(f'{MainUI.get_workspace_control_name()} Deleted')\n\nMainUI.display()" 
+        -command "import maya.cmds as cmds\n\nfrom dev.utils import unload_packages\nunload_packages(silent=False)\n\nimport ui, dev, rig, controller\nfrom ui.main.main_ui import MainUI\n\nif cmds.workspaceControl(MainUI.get_workspace_control_name(), q=True, exists=True):\n    cmds.deleteUI(MainUI.get_workspace_control_name())\n    \n    print(f'{MainUI.get_workspace_control_name()} Deleted')\n\nMainUI.display()" 
         -sourceType "python" 
         -commandRepeatable 1
         -flat 1

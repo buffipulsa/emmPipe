@@ -1,12 +1,14 @@
 
 import maya.cmds as cmds
 
+from rig.objects.object_data import DagNodeData
+
 class Joints:
     """
     Represents a joint chain in the scene.
     """
 
-    def __init__(self, side='l', name='temp', num_joints=1):
+    def __init__(self, name, side, num_joints=1):
         """
         Initialize the Joints instance.
 
@@ -20,10 +22,14 @@ class Joints:
 
         if not name:
             raise TypeError('No name assigned')
+        if not side:
+            raise TypeError('No side assigned')
 
-        self._side = side
         self._name = name
+        self._side = side
         self._num_joints = num_joints
+
+        self._combined_name = f'{name.lower()}_{side.lower()}'
         self._joints = []
 
         self._radius = 1.0
@@ -71,32 +77,18 @@ class Joints:
         Args:
             value (float): The radius of the joints.
         """
-        [cmds.setAttr(f'{joint}.radius', value) for joint in self._joints if len(self._joints) > 0]
+        [cmds.setAttr(f'{joint.dag_path}.radius', value) for joint in self._joints if len(self._joints) > 0]
         self._radius = value
 
     def create(self):
         """
         Create the joints.
         """
-        self._joints = [cmds.createNode('joint', \
-            name=f'{self.name.lower()}_{self.side.lower()}_{str(i).zfill(2)}') \
+        self._joints = [DagNodeData(cmds.createNode('joint', \
+            name=f'{self._combined_name}_{str(i).zfill(2)}')) \
             for i in range(self.num_joints)]
 
-        self._mark_as_joint(self._joints)
-        #self._mark_joint_index(self._joints)
 
-        [cmds.parent(self._joints[i + 1], self._joints[i]) for i in range(len(self._joints) - 1)]
+        [cmds.parent(self._joints[i + 1].dag_path, self._joints[i].dag_path) for i in range(len(self._joints) - 1)]
         
         return self
-    
-    def _mark_as_joint(self, joints):
-
-        for joint in joints:
-            cmds.addAttr(joint, longName="isJoint", attributeType="bool", defaultValue=True)
-            cmds.setAttr(f'{joint}.isJoint', lock=True, keyable=False)
-    
-    def _mark_joint_index(self, joints):
-        
-        for i, joint in enumerate(joints):
-            cmds.addAttr(ou.node_with_attr(joint, 'isJoint'), longName='jointIndex', attributeType='long')
-            cmds.setAttr(f'{ou.node_with_attr(joint, "isJoint")}.jointIndex', i)
