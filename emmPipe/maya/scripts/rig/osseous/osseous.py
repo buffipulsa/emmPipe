@@ -159,14 +159,22 @@ class OsseousBase(BaseObject):
 
 class Osseous(BaseObject):
 
-    def __init__(self, name, side, desc, index, num_joints=1, parent=None):
+    def __init__(self,
+                 name,
+                 side,
+                 desc,
+                 index,
+                 num_joints=1,
+                 parent=None,
+                 up_type='object'):
 
-        self._name = name
-        self._side = side
-        self._desc = desc
+        self._name = name.lower()
+        self._side = side.lower()
+        self._desc = desc.lower()
         self._index = index
         self._num_joints = num_joints
         self._parent = parent
+        self._up_type = up_type.lower()
 
         self._combined_name = f'{self._name}_{self._side}_{self._desc}_{str(self._index).zfill(3)}'
 
@@ -410,45 +418,10 @@ class Osseous(BaseObject):
     @property
     def name(self):
         return self._name
-    
-    @name.setter
-    def name(self, value):
-        self._name = value.lower()
 
     @property
     def side(self):
         return self._side
-    
-    @side.setter
-    def side(self, value):
-        self._side = value.upper()
-    
-    @property
-    def num_joints(self):
-        return self._num_joints
-    
-    @num_joints.setter
-    def num_joints(self, value):
-        self._num_joints = value
-    
-    @property
-    def parent(self):
-        return self._parent
-    
-    @parent.setter
-    def parent(self, value):
-        if self._check_parent(value):
-            self._parent = value
-        else:
-            self._parent = None
-
-    @property
-    def joints(self):
-        return self._joints
-    
-    @joints.setter
-    def joints(self, value):
-        self._joints = value
 
     @property
     def rig_module(self):
@@ -468,3 +441,83 @@ class Osseous(BaseObject):
     
     
 
+def live_pole_vector_pos(a, b, c, mult=1.0):
+    """
+    Calculates the live position of a pole vector based on three input transforms.
+
+    Args:
+        a (str): The name of the first transform.
+        b (str): The name of the second transform.
+        c (str): The name of the third transform.
+        mult (float, optional): The multiplier for the pole vector position. Defaults to 1.0.
+
+    Returns:
+        str: The name of the transform representing the calculated pole vector position.
+    """
+    a_pos_dcm = cmds.createNode('decomposeMatrix', name='a_pos_dcm')
+    b_pos_dcm = cmds.createNode('decomposeMatrix', name='b_pos_dcm')
+    c_pos_dcm = cmds.createNode('decomposeMatrix', name='c_pos_dcm')
+
+    cmds.connectAttr(f'{a}.worldMatrix[0]', f'{a_pos_dcm}.inputMatrix')
+    cmds.connectAttr(f'{b}.worldMatrix[0]', f'{b_pos_dcm}.inputMatrix')
+    cmds.connectAttr(f'{c}.worldMatrix[0]', f'{c_pos_dcm}.inputMatrix')
+
+    vec_ab_pma = cmds.createNode('plusMinusAverage', name='vec_ab_pma')
+    vec_ac_pma = cmds.createNode('plusMinusAverage', name='vec_ac_pma')
+
+    cmds.setAttr(f'{vec_ab_pma}.operation', 2)
+    cmds.setAttr(f'{vec_ac_pma}.operation', 2)
+
+    cmds.connectAttr(f'{b_pos_dcm}.outputTranslate', f'{vec_ab_pma}.input3D[0]')
+    cmds.connectAttr(f'{a_pos_dcm}.outputTranslate', f'{vec_ab_pma}.input3D[1]')
+
+    cmds.connectAttr(f'{c_pos_dcm}.outputTranslate', f'{vec_ac_pma}.input3D[0]')
+    cmds.connectAttr(f'{a_pos_dcm}.outputTranslate', f'{vec_ac_pma}.input3D[1]')
+
+    vec_ac_norm_vp = cmds.createNode('vectorProduct', name='vec_ac_norm_vp')
+
+    cmds.setAttr(f'{vec_ac_norm_vp}.operation', 0)
+    cmds.setAttr(f'{vec_ac_norm_vp}.normalizeOutput', True)
+    cmds.connectAttr(f'{vec_ac_pma}.output3D', f'{vec_ac_norm_vp}.input1')
+
+    vec_ab_scale_vp = cmds.createNode('vectorProduct', name='vec_ab_scale_vp')
+
+    cmds.connectAttr(f'{vec_ab_pma}.output3D', f'{vec_ab_scale_vp}.input1')
+    cmds.connectAttr(f'{vec_ac_norm_vp}.output', f'{vec_ab_scale_vp}.input2')
+
+    pos_D = cmds.createNode('multiplyDivide', name='pos_D')
+
+    cmds.connectAttr(f'{vec_ac_norm_vp}.output', f'{pos_D}.input1')
+    cmds.connectAttr(f'{vec_ab_scale_vp}.output', f'{pos_D}.input2')
+
+    vec_AD = cmds.createNode('plusMinusAverage', name='vec_AD')
+
+    cmds.setAttr(f'{vec_AD}.operation', 1)
+
+    cmds.connectAttr(f'{pos_D}.output', f'{vec_AD}.input3D[0]')
+    cmds.connectAttr(f'{a_pos_dcm}.outputTranslate', f'{vec_AD}.input3D[1]')
+
+    vec_BD = cmds.createNode('plusMinusAverage', name='vec_BD')
+
+    cmds.setAttr(f'{vec_BD}.operation', 2)
+
+    cmds.connectAttr(f'{b_pos_dcm}.outputTranslate', f'{vec_BD}.input3D[0]')
+    cmds.connectAttr(f'{vec_AD}.output3D', f'{vec_BD}.input3D[1]')
+
+    vec_bd_norm_vp = cmds.createNode('vectorProduct', name='vec_bd_norm_vp')
+
+    cmds.setAttr(f'{vec_bd_norm_vp}.operation', 0)
+    cmds.setAttr(f'{vec_bd_norm_vp}.normalizeOutput', True)
+    cmds.connectAttr(f'{vec_BD}.output3D', f'{vec_bd_norm_vp}.input1')
+
+    pole_vec_pos_mult = cmds.createNode('multiplyDivide', name='pole_vec_pos_mult')
+
+    cmds.connectAttr(f'{vec_bd_norm_vp}.output', f'{pole_vec_pos_mult}.input1')
+    cmds.setAttr(f'{pole_vec_pos_mult}.input2', mult, mult, mult)
+
+    pos_vec_BD = cmds.createNode('plusMinusAverage', name='pos_vec_AD')
+
+    cmds.connectAttr(f'{b_pos_dcm}.outputTranslate', f'{pos_vec_BD}.input3D[0]')
+    cmds.connectAttr(f'{pole_vec_pos_mult}.output', f'{pos_vec_BD}.input3D[1]')
+
+    return pos_vec_BD

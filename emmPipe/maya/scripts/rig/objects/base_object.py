@@ -22,8 +22,7 @@ class BaseObject:
         meta_node (str): The meta node associated with the instance.
     """
     def __init__(self) -> None:
-        # self.logger = Logger(__name__)
-        # self.logger.level = 'DEBUG'
+
         self._meta_node = None
         self._meta_node_name = None
 
