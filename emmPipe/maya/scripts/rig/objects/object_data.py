@@ -1,4 +1,6 @@
 
+import importlib
+
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
@@ -36,6 +38,46 @@ class DependencyNodeData:
         self._dependnode_fn = self._get_dependnode_fn()
 
         self._check_if_dag_or_depend_node()
+
+    #... Public methods ...#
+    def add_attribute(self, attr_name, attr_type, keyable=True):
+        """
+        Adds an attribute to the node.
+        """
+        data = {'int': {'attr_fn': om.MFnNumericAttribute(), 'data_type': om.MFnNumericData.kInt},
+                'float': {'attr_fn': om.MFnNumericAttribute(), 'data_type': om.MFnNumericData.kFloat},
+                'string': {'attr_fn': om.MFnTypedAttribute(), 'data_type': om.MFnData.kString}}
+
+        attr_fn = data[attr_type]['attr_fn']
+        data_type = data[attr_type]['data_type']
+
+        attr = attr_fn.create(attr_name, attr_name, data_type)
+        attr_fn.storable = True
+        attr_fn.writable = True
+        attr_fn.keyable = keyable
+        self._dependnode_fn.addAttribute(attr)
+        
+    def add_compound_attribute(self, name, attr_names, attr_type, keyable=True):
+        """
+        Adds a compound attribute to the node.
+        """
+        data = {'int': {'attr_fn': om.MFnNumericAttribute(), 'data_type': om.MFnNumericData.kInt},
+                'float': {'attr_fn': om.MFnNumericAttribute(), 'data_type': om.MFnNumericData.kFloat},
+                'string': {'attr_fn': om.MFnTypedAttribute(), 'data_type': om.MFnData.kString}}
+
+        compound_fn = om.MFnCompoundAttribute()
+        compound_attr = compound_fn.create(name, name, )        
+
+        for attr_name in attr_names:
+            attr_fn = data[attr_type]['attr_fn']
+            data_type = data[attr_type]['data_type']
+            attr = attr_fn.create(f'{name}{attr_name}', f'{name}{attr_name}', data_type)
+            attr_fn.storable = True
+            attr_fn.writable = True
+            attr_fn.keyable = keyable
+            compound_fn.addChild(attr)
+        
+        self._dependnode_fn.addAttribute(compound_attr)
 
     #... Private methods ...#
     def _check_if_dag_or_depend_node(self):
@@ -411,28 +453,12 @@ class MetaNode:
             name (str): The name of the meta node.
             data (dict): The data associated with the meta node.
         """
-        self._name = name
+        self._name = name.replace('_metaData', '') if name.endswith('_metaData') else name
         self.data = data
 
         self.meta_node = cmds.createNode('network', name=f'{self._name}_metaData')
 
         self._create_attrs()
-
-    #... Public methods ...#
-    @classmethod
-    def rebuild(cls, meta_node):
-        """
-        Rebuilds a MetaNode instance from a serialized meta node.
-
-        Args:
-            meta_node (str): The name of the serialized meta node.
-
-        Returns:
-            MetaNode: The rebuilt MetaNode instance.
-        """
-        deserialize_meta_node = DeserializeMetaNode(meta_node=meta_node)
-
-        return deserialize_meta_node.rebuild()
 
     #... Private methods ...#
     def _create_attrs(self):
@@ -448,6 +474,7 @@ class MetaNode:
         }
 
         for attr_name, data in self.data.items():
+            attr_name = f'__{attr_name}'
             if type(data) in type_to_attr_fn:
                 attr_fn, data_fn, plug_function = type_to_attr_fn[type(data)]
 
@@ -472,12 +499,18 @@ class MetaNode:
 
                     for i, item in enumerate(data):
                         cmds.connectAttr(f'{item.fullPathName()}.message', f'{self.meta_node}.{attr_name}_{i}')
-                
+
                 elif type(data) == om.MDagPath:
                     message_attr_mobj = om.MFnMessageAttribute().create(attr_name, attr_name)
                     node_data.dependnode_fn.addAttribute(message_attr_mobj)
 
                     cmds.connectAttr(f'{data.fullPathName()}.message', f'{self.meta_node}.{attr_name}')
+
+                elif type(data) == om.MFnDependencyNode:
+                    message_attr_mobj = om.MFnMessageAttribute().create(attr_name, attr_name)
+                    node_data.dependnode_fn.addAttribute(message_attr_mobj)
+
+                    cmds.connectAttr(f'{data.name()}.message', f'{self.meta_node}.{attr_name}')
 
     #... Properties ...#
     @property
@@ -495,9 +528,6 @@ class DeserializeMetaNode:
     """
     A class that deserializes meta nodes in Maya.
 
-    Attributes:
-        ATTR_SKIPTS (list): A list of attribute names to skip during serialization.
-
     Methods:
         __init__(self, meta_node): Initializes a new instance of the DeserializeMetaNode class.
         seriazlie_data(self): Serializes the data from the meta node.
@@ -508,10 +538,6 @@ class DeserializeMetaNode:
         _get_class(self): Gets the class from the serialized data.
         rebuild(self): Rebuilds the class instance from the serialized data.
     """
-
-    ATTR_SKIPTS = ['message','caching','frozen','isHistoricallyInteresting',
-                    'nodeState','binMembership','affects','affectedBy']
-
     def __init__(self, meta_node) -> None:
         """
         Initializes a new instance of the DeserializeMetaNode class.
@@ -521,39 +547,33 @@ class DeserializeMetaNode:
         """
         self.meta_node = DependencyNodeData(meta_node)
         self._data = {}
+
         self._deseriazlie_data()
         self._class = self._get_class()
-
-    #... Public methods ...#
-    def rebuild(self):
-        """
-        Rebuilds the class instance from the serialized data.
-
-        Returns:
-            The rebuilt class instance.
-        """
-        class_instance = self._class.from_data(self.meta_node, self.data)
-            
-        return class_instance
 
     #... Private methods ...#
     def _deseriazlie_data(self):
         """
         Deserializes the data from the meta node.
         """
-        attrs_mobj = [self.meta_node.dependnode_fn.attribute(attr) for attr in cmds.listAttr(self.meta_node.dependnode_fn.absoluteName())\
-                if attr not in self.ATTR_SKIPTS]
+        attrs_mobj = [self.meta_node.dependnode_fn.attribute(attr) for attr in cmds.listAttr(self.meta_node.dependnode_fn.absoluteName())]
         attrs_fn = [attr.apiTypeStr for attr in attrs_mobj]
         
         for attr, attr_fn in zip(attrs_mobj, attrs_fn):
-            attr_name = self._get_attribute_name(attr)
+            try:
+                if om.MFnAttribute(attr).name.startswith('__'):
+                    attr_name = self._get_attribute_name(attr)
 
-            if attr_fn == 'kMessageAttribute':
-                self._data[attr_name] = self._deserialize_message_attr(attr)
-            if attr_fn == 'kTypedAttribute':
-                self._data[attr_name] = self._deserialize_typed_attr(attr)
-            if attr_fn == 'kNumericAttribute':
-                self._data[attr_name] = self._deserialize_numeric_attr(attr)
+                    if attr_fn == 'kCompoundAttribute':
+                        self._data[attr_name] = self._deserialize_compound_attr(attr)
+                    if attr_fn == 'kMessageAttribute':
+                        self._data[attr_name] = self._deserialize_message_attr(attr)
+                    if attr_fn == 'kTypedAttribute':
+                        self._data[attr_name] = self._deserialize_typed_attr(attr)
+                    if attr_fn == 'kNumericAttribute':
+                        self._data[attr_name] = self._deserialize_numeric_attr(attr)
+            except:
+                pass
 
     def _get_attribute_name(self, attr):
         """
@@ -565,8 +585,28 @@ class DeserializeMetaNode:
         Returns:
             The attribute name.
         """
-        return self.meta_node.dependnode_fn.findPlug(attr, True).partialName()
+        return self.meta_node.dependnode_fn.findPlug(attr, True).partialName().replace('__','')
     
+    def _deserialize_compound_attr(self, attr):
+        """
+        Deserializes a compound attribute.
+
+        Args:
+            attr: The attribute.
+
+        Returns:
+            The deserialized compound attribute.
+        """
+        compound_plug = self.meta_node.dependnode_fn.findPlug(attr, True)
+        compound_data = []
+
+        for i in range(compound_plug.numChildren()):
+            child_name = compound_plug.child(i).partialName()
+
+            compound_data.append(self._deserialize_message_attr(child_name))
+    
+        return compound_data
+
     def _deserialize_message_attr(self, attr):
         """
         Deserializes a message attribute.
@@ -580,9 +620,15 @@ class DeserializeMetaNode:
         message_plug = self.meta_node.dependnode_fn.findPlug(attr, True)
         connected_node = message_plug.connectedTo(True,False)[0].node()
 
-        connected_node = DagNodeData(om.MFnDagNode(connected_node).fullPathName())
+        try:
+            connected_node = DagNodeData(om.MFnDagNode(connected_node).fullPathName())
 
-        return connected_node.dag_path
+            return connected_node.dag_path
+        except:
+            connected_node = DependencyNodeData(om.MFnDependencyNode(connected_node).name())
+
+            return connected_node.dependnode_fn
+
 
     def _deserialize_typed_attr(self, attr):
         """
@@ -638,3 +684,51 @@ class DeserializeMetaNode:
             The serialized data.
         """
         return self._data
+    
+
+class RebuildObject:
+    """
+    Class that rebuilds objects based on meta data from metaNodes.
+    """
+    def __repr__(self):
+        return f'{self._class}'
+
+    def __init__(self, meta_node):
+        self._meta_node = meta_node
+        self._meta_data = DeserializeMetaNode(self._meta_node).data
+
+        self._class_call = self._meta_data['parameters']
+
+    def rebuild(self):
+        """
+        Rebuilds an instance of the object based on the stored metadata.
+
+        Returns:
+            instance: The rebuilt instance of the object.
+        """
+        mod = __import__(self._meta_data['class_module'], fromlist=[self._meta_data['class_name']])
+        globals()[self._meta_data['class_name']] = getattr(mod, self._meta_data['class_name'])
+        instance = eval(self._class_call)
+
+        for attr, value in self._meta_data.items():
+            attr = attr.replace('__','')
+            if attr not in ['class_module', 'class_name', 'parameters']:
+                if type(value) == om.MDagPath:
+                    setattr(instance, attr, DagNodeData(value))
+                elif type(value) == om.MFnDependencyNode:
+                    setattr(instance, attr, DependencyNodeData(value))
+                elif type(value) == list:
+                    values = []
+                    for val in value:
+                        if type(val) == om.MDagPath:
+                            values.append(DagNodeData(val))
+                        elif type(val) == om.MFnDependencyNode:
+                            values.append(DependencyNodeData(val))
+                        elif type(val) == DagNodeData:
+                            values.append(DagNodeData(val))
+                    
+                    setattr(instance, attr, values)
+        
+        instance.meta_node = self._meta_node
+                    
+        return instance

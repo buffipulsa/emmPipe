@@ -9,21 +9,23 @@ from rig.objects.object_data import DagNodeData, MetaNode
 
 class Control(BaseObject):
 
+    def __str__(self):
+        return f'{self._combined_name}'
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self._name!r}, {self._side!r}, {self._desc!r}, {self._index!r}, {self._shape!r})'
+
     SHAPES = ['circle', 'square', 'box', 'cone', 'orb', 'arrow4way', 'arrow1way', 'arrow2way', 
               'diamond', 'arrowSquare', 'diamondCross', 'triangle']
     
     COLORS = {'red': 13, 'blue': 6, 'yellow': 17}
 
     def __init__(self, name, side, desc, index, shape):
-        super().__init__()
+        super().__init__(name, side, desc, index)
 
-        self._name = name
-        self._side = side
-        self._desc = desc
-        self._index = index
+        self._combined_name += '_ctrl'
+
         self._shape = shape
-
-        self._combined_name = f'{self._name}_{self._side}_{self._desc}_{str(self._index).zfill(3)}'
         
         self._ctrl = None
         self._offset = None
@@ -48,31 +50,26 @@ class Control(BaseObject):
         Raises:
             ValueError: If an invalid control shape is specified.
         """
-        
-        if cmds.objExists(f'{self._combined_name}_ctrl_metaData'):
-            self = MetaNode.rebuild(f'{self._combined_name}_ctrl_metaData')
+        if self._shape in self.SHAPES:
+            shape_method = getattr(ControlShapes, self._shape)
+            self._ctrl = DagNodeData(shape_method(self.combined_name))
         else:
-            if self._shape in self.SHAPES:
-                shape_method = getattr(ControlShapes, self._shape)
-                self._ctrl = DagNodeData(shape_method(self._combined_name))
-            else:
-                raise ValueError(f'Please pick a control shape. Available shapes: {self.SHAPES}')
-            
-            self._offset = DagNodeData(cmds.createNode('transform', 
-                                        name=f'{self._combined_name}_hrc'))
+            raise ValueError(f'Please pick a control shape. Available shapes: {self.SHAPES}')
+        
+        self._offset = DagNodeData(cmds.createNode('transform', 
+                                    name=f'{self.combined_name}_hrc'))
 
-            cmds.parent(self._ctrl.dag_path, self._offset.dag_path)
+        cmds.parent(self._ctrl.dag_path, self._offset.dag_path)
 
-            self._shapes = self._ctrl.shapes
-            
-            self.data = self._create_meta_data()
-            self._create_meta_node(f'{self._combined_name}_ctrl')
+        self._shapes = self._ctrl.shapes
 
-            if self._side   == 'l': self._color = 'blue'
-            elif self._side == 'r': self._color = 'red'
-            else:                   self._color = 'yellow'
+        if self._side   == 'l': self._color = 'blue'
+        elif self._side == 'r': self._color = 'red'
+        else:                   self._color = 'yellow'
 
-            self._set_color(self._color)
+        self._set_color(self._color)
+
+        super().create()
 
         return self
 
@@ -87,17 +84,6 @@ class Control(BaseObject):
             unlock (bool, optional): If True, unlocks the specified attributes. If False, locks them. Defaults to False.
         """
         [cmds.setAttr(f'{self._ctrl.dag_path}.{ch}{ax}', lock=not unlock) for ch in chs for ax in axis]
-    
-    @classmethod
-    def from_data(cls, meta_node, data):
-        super().from_data(meta_node, data)
-        
-        cls.instance.control = DagNodeData(data['control'])
-        cls.instance.offset = DagNodeData(data['offset'])
-        cls.instance.thickness = float(data['thickness'])
-        cls.instance.color = data['color']
-
-        return cls.instance
     
     #... Private methods ...#
     def _set_color(self, value):
@@ -126,9 +112,10 @@ class Control(BaseObject):
                     cmds.setAttr(f'{shape}.overrideEnabled', 1)
                 cmds.setAttr(f'{shape}.overrideColor', color)
             
-            if hasattr(self, 'meta_node'):
-                cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.color', lock=False)
-                cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.color', value, type='string', lock=True)
+            # if hasattr(self, 'meta_node'):
+            if self._meta_node:
+                cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.__color', lock=False)
+                cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.__color', value, type='string', lock=True)
         else:
             raise ValueError('Please provide a valid color name')
         
@@ -152,8 +139,8 @@ class Control(BaseObject):
         [cmds.setAttr(f'{shape}.lineWidth', value) for shape in shapes]
 
         if hasattr(self, 'meta_node'):
-            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.thickness', lock=False)
-            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.thickness', value, lock=True)
+            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.__thickness', lock=False)
+            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.__thickness', value, lock=True)
 
     def _set_scale(self, value):
         """
@@ -174,26 +161,16 @@ class Control(BaseObject):
         self.lock_transforms(self._ctrl.dag_path, 's')
 
         if hasattr(self, 'meta_node'):
-            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.scale', lock=False)
-            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.scale', value, lock=True)
+            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.__scale', lock=False)
+            cmds.setAttr(f'{self.meta_node.dependnode_fn.absoluteName()}.__scale', value, lock=True)
 
     def _create_meta_data(self):
         super()._create_meta_data()
 
-        self.data['parameters'] = convert_list_to_str([self._name,
-                                                                    self._side,
-                                                                    self._desc,
-                                                                    self._index,
-                                                                    self._shape])
-
         self.data['control'] = self._ctrl.dag_path
         self.data['offset'] = self._offset.dag_path
         self.data['shapes'] = self._ctrl.shapes
-        self.data['side'] = self._side
-        self.data['name'] = self._name
-        self.data['shape'] = self._shape
         self.data['scale'] = self._scale
-        self.data['index'] = self._index
         self.data['thickness'] = self._thickness
         self.data['color'] = self._color
 
@@ -223,6 +200,14 @@ class Control(BaseObject):
     @offset.setter
     def offset(self, value):
         self._offset = value
+
+    @property
+    def shapes(self):
+        return self._shapes
+    
+    @shapes.setter
+    def shapes(self, value):
+        self._shapes = value
 
     @property
     def color(self):
@@ -269,13 +254,13 @@ class ControlShapes:
         for pos in positions:
             crv = cmds.curve(d=degree, p=pos)
             if close:
-                cmds.closeCurve(crv, ch=True, ps=False, rpo=True)
+                cmds.closeCurve(crv, ch=False, ps=False, rpo=True)
             temp_transforms.append(crv)
 
-        crv_transform = cmds.createNode('transform', name=f'{name}_ctrl')
+        crv_transform = cmds.createNode('transform', name=f'{name}')
         for temp_transform in temp_transforms:
             shape = cmds.listRelatives(temp_transform, shapes=True)
-            shape = cmds.rename(shape, f'{name}_ctrlShape_001')
+            shape = cmds.rename(shape, f'{name}Shape_001')
             cmds.parent(shape, crv_transform, r=True, shape=True)
 
         cmds.delete(temp_transforms)

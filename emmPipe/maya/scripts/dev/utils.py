@@ -81,4 +81,24 @@ def convert_str_to_list(str_to_convert):
     elif not ',' in str_to_convert:
         return [str_to_convert]
     else:
-        return str_to_convert.split(',')
+        list_from_convert = str_to_convert.split(',')
+        for item in list_from_convert:
+            if item == 'None':
+                list_from_convert[list_from_convert.index(item)] = None
+
+        return list_from_convert
+    
+def combine_names(*args):
+    """
+    Combines the given names into a single string.
+    """
+    parts = []
+    for arg in args:
+        if isinstance(arg, str):
+            arg = arg.lower()
+        if isinstance(arg, int):
+            arg = str(arg).zfill(3)
+        
+        parts.append(arg)
+    
+    return '_'.join(parts)

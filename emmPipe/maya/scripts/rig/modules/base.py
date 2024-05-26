@@ -214,26 +214,6 @@ class RigModule(BaseObject):
         orient_constraints (DagNode): The orient constraints node representing the orient constraints within the rig module.
         scale_constraints (DagNode): The scale constraints node representing the scale constraints within the rig module.
     """
-
-    def __init__(self, name) -> None:
-        super().__init__()
-        
-        self._name = name
-
-        self._module = None
-        self._systems = None
-        self._joints = None
-        self._fk = None
-        self._ik = None
-        self._constraints = None
-        self._par_constraints = None
-        self._point_constraints = None
-        self._orient_constraints = None
-        self._scale_constraints = None
-
-    #... rest of the code ...
-class RigModule(BaseObject):
-    
     def __init__(self, name) -> None:
         super().__init__()
         
