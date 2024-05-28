@@ -5,6 +5,7 @@ import maya.cmds as cmds
 from dev.utils import convert_list_to_str, convert_str_to_list
 
 from rig.objects.object_data import MetaNode, DagNodeData, DependencyNodeData, RebuildObject
+from rig.objects.object_utils import transfer_connections
 from rig.objects.base_object import BaseObject
 from rig.joints.joints import Joints
 from rig.controls.control import Control
@@ -148,17 +149,26 @@ class SkeletonCreator(BaseObject):
     def __repr__(self):
         return f'{self.__class__.__name__}({self._name!r}, {self._side!r}, {self._desc!r}, {self._index!r}, {self._num_joints!r}, {self._parent!r}, {self._up_type!r})'
 
-    def __init__(self, name, side, desc, index=0, num_joints=1, parent=None, up_type='object'):
+    def __init__(self, name, side, desc, index=0, num_joints=1, parent=None, up_type='object', hook_idx=0, replace_hook=False):
         super().__init__(name, side, desc, index)
 
         self._num_joints = num_joints
         self._parent = self._set_parent(parent)
-        self._up_type = up_type.lower()
+        self._up_type = up_type.lower() if up_type else None
+        self._hook_idx = hook_idx
+        self._replace_hook = replace_hook
 
         self._joints = []
+        self._aim_joints = []
+        self._aim_vectors = []
+        self._aim_offsets = []
+
         self._ctrls = []
 
         self._parent_pos = [0, 0, 0]
+        self._previous_vec = None
+
+        #print(self._combined_name)
 
     #... Public Methods ...#
     def create(self):
@@ -171,11 +181,19 @@ class SkeletonCreator(BaseObject):
         self._create_aim_joints()
 
         self._create_controls()
+        self._create_up_ctrl()
 
-        if self._up_type == 'object':
-            self._create_object_aim_setup()
-        elif self._up_type == 'vector_plane':
-            self._create_vector_plane_aim_setup()
+        # if self._combined_name == 'arm_l_skeleton_000':
+        #     return self
+
+        if self._up_type:
+            if self._up_type == 'object':
+                self._create_object_aim_setup()
+            if self._up_type == 'vector_plane':
+                self._create_vector_plane_aim_setup()
+
+        if self._replace_hook:
+            self._set_replace_hook()
 
         super().create()
 
@@ -213,25 +231,31 @@ class SkeletonCreator(BaseObject):
 
         self._rig_module_grp = self._add_module(f'{self._combined_name}_hrc', self.base.modules_grp, True)
         self._ctrls_grp = self._add_module('controls_hrc', self._rig_module_grp, True)
-        self.utils_grp = self._add_module('utils_hrc', self._rig_module_grp, True)
-        self.annotation_grp = self._add_module('annotations_hrc', self._rig_module_grp, True)
+        self._utils_grp = self._add_module('utils_hrc', self._rig_module_grp, True)
+        self._annotation_grp = self._add_module('annotations_hrc', self._rig_module_grp, True)
 
         return
     
     def _create_joints(self):
         """
-        Creates joints for the osseous rig element.
+        Creates joints based on the specified parameters.
+
+        Raises:
+            ValueError: If the number of joints is not valid for the specified up type.
+
+        Returns:
+            None
         """
         if self._up_type == 'vector_plane':
-            if self._num_joints > 3 or self._num_joints <= 1:
-                raise ValueError('The number of joints must be greater than 1 and less than or equal to 3 for vector plane up type.')
-
-            if self._num_joints == 2:
-                self._num_joints = 3
+            if self._num_joints != 3:
+                raise ValueError('The number of joints must be 3 for vector plane up type.')
+        elif self._up_type == 'object':
+            if not self._num_joints > 1:
+                raise ValueError('The number of joints must be 2 or greater for object up type.')
 
         self.c_joints = Joints(self._name, self._side, self._num_joints).create()
         self.c_joints.radius = 0.1
-        self._joints: list = self.c_joints._joints
+        self._joints = self.c_joints._joints
 
         [cmds.setAttr(f'{joint.dag_path}.displayLocalAxis', True) for joint in self._joints]
 
@@ -244,36 +268,16 @@ class SkeletonCreator(BaseObject):
         Parents the joints to the parent osseous rig element.
         """
         if self._parent:
-            parent_joint = self._parent.joints[-2] if self._parent.up_type == 'vector_plane' else self._parent.joints[-1]
+            if self._parent.up_type == 'vector_plane' and self._replace_hook == True:
+                self._hook_idx = 1
+
+            parent_joint = self._parent.joints[self._hook_idx]
             self._parent_pos = cmds.xform(parent_joint.dag_path, ws=True, translation=True, 
                                         query=True)
             cmds.setAttr(f'{self._joints[0].dag_path}.translate', *self._parent_pos)
             cmds.parent(self._joints[0].dag_path, parent_joint.dag_path)
-            if self._parent.up_type == 'vector_plane':
-                cmds.delete(self._parent.joints[-1].dag_path)
         else:
             cmds.parent(self._joints[0].dag_path, self.base.root_joint.dag_path)
-
-        return
-
-    def _create_aim_joints(self):
-        """
-        Creates the aim joints for the SkeletonCreator element.
-        """
-        for i, joint in enumerate(self._joints):
-            aim_joint = DagNodeData(cmds.duplicate(joint.dag_path, 
-                                                   name=f'{joint.dependnode_fn.name()}_aim', 
-                                                   parentOnly=True)[0])
-            aim_offset: DagNodeData = self._add_module(f'{aim_joint.dependnode_fn.absoluteName()}_hrc', 
-                                          self.utils_grp, True)
-            aim_vectors: DagNodeData = self._add_module(f'{aim_joint.dependnode_fn.absoluteName()}_vectors', 
-                                           aim_offset, True)
-
-            cmds.matchTransform(aim_offset.dag_path, aim_joint.dag_path)
-            cmds.parent(aim_joint.dag_path, aim_vectors.dag_path)
-
-            cmds.parent(cmds.parentConstraint(aim_joint.dag_path, joint.dag_path), 
-                        self.base.joints_utils.dag_path)
 
         return
 
@@ -287,12 +291,37 @@ class SkeletonCreator(BaseObject):
             cmds.xform(self._joints[0].dag_path, ws=True, translation=(x + 5, y, z))
         elif self._side == 'r':
             cmds.xform(self._joints[0].dag_path, ws=True, translation=(x - 5, y, z))
-            cmds.setAttr(f'{self.first_joint}.rotateY', 180)
+            cmds.setAttr(f'{self._joints[0].dag_path}.rotateY', 180)
         elif self._side == 'c':
             cmds.xform(self._joints[0].dag_path, ws=True, translation=(x, y + 5, z))
             cmds.setAttr(f'{self._joints[0].dag_path}.rotateZ', 90)
 
         [cmds.setAttr(f'{joint.dag_path}.translateX', 5) for joint in self._joints[1:]]
+
+        return
+    
+    def _create_aim_joints(self):
+        """
+        Creates the aim joints for the SkeletonCreator element.
+        """
+        for joint in self._joints:
+            aim_joint = DagNodeData(cmds.duplicate(joint.dag_path, 
+                                                   name=f'{joint.dependnode_fn.name()}_aim', 
+                                                   parentOnly=True)[0])
+            aim_offset = self._add_module(f'{aim_joint.dependnode_fn.absoluteName()}_hrc', 
+                                          self._utils_grp, True)
+            aim_vectors = self._add_module(f'{aim_joint.dependnode_fn.absoluteName()}_vectors', 
+                                           aim_offset, True)
+
+            cmds.matchTransform(aim_offset.dag_path, aim_joint.dag_path)
+            cmds.parent(aim_joint.dag_path, aim_vectors.dag_path)
+
+            cmds.parent(cmds.parentConstraint(aim_joint.dag_path, joint.dag_path), 
+                        self.base.joints_utils.dag_path)
+            
+            self._aim_joints.append(aim_joint)
+            self._aim_vectors.append(aim_vectors)
+            self._aim_offsets.append(aim_offset)
 
         return
 
@@ -312,7 +341,7 @@ class SkeletonCreator(BaseObject):
                                  self._main_ctrl.offset.dag_path, mo=True)
         else:
             cmds.parentConstraint(self._parent_main_ctrl.control.dag_path, 
-                                  -self._main_ctrl.offset.dag_path, mo=True)
+                                  self._main_ctrl.offset.dag_path, mo=True)
 
         self._main_ctrl.color = 'red'
         self._main_ctrl.thickness = 2
@@ -321,34 +350,83 @@ class SkeletonCreator(BaseObject):
             self._main_ctrl.control.add_attribute('pv_scale', 'float')
             cmds.setAttr(f'{self._main_ctrl.control.dag_path}.pv_scale', 1)
 
-        if self._up_type == 'object':
-            self.up_ctrl = Control(self._name, self._side, 'up', 0, shape='diamond').create()
-            cmds.matchTransform(self.up_ctrl.offset.dag_path, self._main_ctrl.control.dag_path)
-            cmds.parent(self.up_ctrl.offset.dag_path, self._main_ctrl.control.dag_path)
-            cmds.setAttr(f'{self.up_ctrl.control.dag_path}.translateY', 5)
-
         for i,joint in enumerate(self._joints):
-            if self._up_type == 'vector_plane' and i == len(self._joints) - 1:
-                self._dummy_ctrl = Control(self._name, self._side, 'dummy', i, shape='triangle').create()
-                cmds.matchTransform(self._dummy_ctrl.offset.dag_path, joint.dag_path)
-                cmds.parent(self._dummy_ctrl.offset.dag_path, self._main_ctrl.control.dag_path)
-
-                self._ctrls.append(self._dummy_ctrl)
-
-                break
 
             ctrl = Control(self.name, self.side, 'local', i, shape='orb').create()
             cmds.matchTransform(ctrl.offset.dag_path, joint.dag_path)
             cmds.parent(ctrl.offset.dag_path, self._main_ctrl.control.dag_path)
 
+            cmds.parentConstraint(ctrl.control.dag_path, self._aim_offsets[i].dag_path, mo=True)
+
             ctrl.color = 'yellow'
             ctrl.thickness = 2
+
+            if self._up_type == 'vector_plane' and i == 1:
+                cmds.setAttr(f'{ctrl.offset.dag_path}.translateZ', -0.0001)
 
             self._ctrls.append(ctrl)
 
         if self._parent:
             cmds.parentConstraint(self._parent_main_ctrl.control.dag_path, self._main_ctrl.offset.dag_path, mo=True)
             cmds.scaleConstraint(self._parent_main_ctrl.control.dag_path, self._main_ctrl.offset.dag_path, mo=True)
+
+        return
+    
+    def _create_up_ctrl(self):
+
+        self._up_ctrl = Control(self._name, self._side, 'up', index=0, shape='diamond').create()
+        cmds.parent(self._up_ctrl.offset.dag_path, self._main_ctrl.control.dag_path)
+
+        curve = DagNodeData(cmds.curve(d=1, p=[(0, 0, 0), (0, 5, 0)], k=[0, 1]))
+        cmds.setAttr(f'{curve.dependnode_fn.absoluteName()}.overrideEnabled', True)
+        cmds.setAttr(f'{curve.dependnode_fn.absoluteName()}.overrideDisplayType', 1)
+        cmds.parent(curve.dag_path, self._utils_grp.dag_path)
+
+        up_dcm = cmds.createNode('decomposeMatrix', name=f'{self._up_ctrl.control.dependnode_fn.name()}_decomposeMatrix')
+        cmds.connectAttr(f'{self._up_ctrl.control.dag_path}.worldMatrix[0]', f'{up_dcm}.inputMatrix')
+        cmds.connectAttr(f'{up_dcm}.outputTranslate', f'{curve.shapes[0]}.controlPoints[0]')
+
+        ctrl_dcm = cmds.createNode('decomposeMatrix', name=f'{self._main_ctrl.control.dependnode_fn.name()}_decomposeMatrix')
+
+        if self._up_type == 'vector_plane':
+            cmds.connectAttr(f'{self._ctrls[1].control.dag_path}.worldMatrix[0]', f'{ctrl_dcm}.inputMatrix')
+            cmds.connectAttr(f'{ctrl_dcm}.outputTranslate', f'{curve.shapes[0]}.controlPoints[1]')
+        elif self._up_type == 'object':
+            cmds.connectAttr(f'{self._main_ctrl.control.dag_path}.worldMatrix[0]', f'{ctrl_dcm}.inputMatrix')
+            cmds.connectAttr(f'{ctrl_dcm}.outputTranslate', f'{curve.shapes[0]}.controlPoints[1]')
+    
+    def _create_vector_plane_aim_setup(self):
+        """
+        Creates the aim setup for the vector plane up type.
+        """
+        output = live_pole_vector_pos(self._ctrls[0].control.dag_path, 
+                                self._ctrls[1].control.dag_path, 
+                                self._ctrls[-1].control.dag_path, 10)
+
+        cmds.parent(self._up_ctrl.offset.dag_path, self._ctrls_grp.dag_path)
+        cmds.connectAttr(f'{output.dependnode_fn.absoluteName()}.output', f'{self._up_ctrl.offset.dag_path}.translate')
+        cmds.connectAttr(f'{self._main_ctrl.control.dag_path}.pv_scale', f'{output.dependnode_fn.absoluteName()}.scale')
+
+        cmds.aimConstraint(self._aim_joints[1].dag_path, self._up_ctrl.offset.dag_path,)
+
+        for shape in self._up_ctrl.control.shapes:
+            cmds.setAttr(f'{shape}.overrideEnabled', True)
+            cmds.setAttr(f'{shape}.overrideDisplayType', 1)
+        
+        for i, aim_joint in enumerate(self._aim_joints):
+            if i < len(self._aim_joints) - 1:
+                cmds.aimConstraint(self._aim_vectors[i+1].dag_path, aim_joint.dag_path, 
+                                aimVector=(1, 0, 0),
+                                worldUpType='object',
+                                worldUpObject=self._up_ctrl.control.dag_path, 
+                                worldUpVector=(0, 1, 0))
+            
+            else:
+                cmds.aimConstraint(self._aim_vectors[i-1].dag_path, aim_joint.dag_path, 
+                                aimVector=(-1, 0, 0),
+                                worldUpType='object',
+                                worldUpObject=self._up_ctrl.control.dag_path, 
+                                worldUpVector=(0, 1, 0))
 
         return
 
@@ -358,98 +436,71 @@ class SkeletonCreator(BaseObject):
         self.first_aim_jnt = None
         self.par_aim = None
 
-        up = self.up_ctrl.control.dag_path
+        cmds.matchTransform(self._up_ctrl.offset.dag_path, self._main_ctrl.control.dag_path)
+        up_axis = 'ty' if self._side == 'l' or self.side == 'r' else 'tz'
+        cmds.setAttr(f'{self._up_ctrl.control.dag_path}.{up_axis}', 5)
 
-        for i, joint in enumerate(self._joints):
-            aim_joint = cmds.duplicate(joint.dag_path, name=f'{joint.dependnode_fn.name()}_aim', parentOnly=True)[0]
-            aim_offset = self._add_module(f'{aim_joint}_hrc', self.utils_grp, True)
-            aim_vectors = self._add_module(f'{aim_joint}_vectors', aim_offset, True)
-
-            cmds.matchTransform(aim_offset.dag_path, aim_joint)
-            cmds.parent(aim_joint, aim_vectors.dag_path)
-
-            par_ctrl_aim = cmds.parentConstraint(self._ctrls[i].control.dag_path, aim_offset.dag_path, mo=True)
-            par_main = cmds.parentConstraint(aim_joint, joint.dag_path)
-
-            cmds.parent(par_ctrl_aim, par_main, self.base.joints_utils.dag_path)
-
-            #if self.previous_vec:
-            cmds.aimConstraint(aim_joint, 
-                                self.previous_vec.dag_path, 
+        for i, aim_joint in enumerate(self._aim_joints):
+            if i < len(self._aim_joints) - 1:
+                cmds.aimConstraint(self._aim_vectors[i+1].dag_path, aim_joint.dag_path, 
                                 aimVector=(1, 0, 0),
                                 worldUpType='object',
-                                worldUpObject=up, 
+                                worldUpObject=self._up_ctrl.control.dag_path, 
+                                worldUpVector=(0, 1, 0))
+            else:
+                cmds.aimConstraint(self._aim_vectors[i-1].dag_path, aim_joint.dag_path, 
+                                aimVector=(-1, 0, 0),
+                                worldUpType='object',
+                                worldUpObject=self._up_ctrl.control.dag_path, 
                                 worldUpVector=(0, 1, 0))
 
-            self.previous_vec = aim_vectors
-
-            if not self.first_aim_jnt:
-                self.first_aim_jnt = aim_joint
-
-
-            # self.par_aim = cmds.aimConstraint(self.first_aim_jnt, self._parent.previous_vec.dag_path, 
-            #                                 aimVector=(1, 0, 0),
-            #                                 worldUpType='object',
-            #                                 worldUpObject=up,
-            #                                 worldUpVector=(0,1,0))[0]
-    
-    def _create_vector_plane_aim_setup(self):
-        """
-        Creates the aim setup for the vector plane up type.
-        """
-        self.previous_vec = None
-        self.first_aim_jnt = None
-        self.par_aim = None
-
-        output = live_pole_vector_pos(self._ctrls[0].control.dag_path, 
-                                self._ctrls[1].control.dag_path, 
-                                self._ctrls[-1].control.dag_path, 10)
-        
-        up = cmds.spaceLocator()[0]
-
-        cmds.connectAttr(f'{output.dependnode_fn.absoluteName()}.output', f'{up}.translate')
-        cmds.connectAttr(f'{self._main_ctrl.control.dag_path}.pv_scale', f'{output.dependnode_fn.absoluteName()}.scale')
-
-        # for i, joint in enumerate(self._joints):
-        #     aim_joint = cmds.duplicate(joint.dag_path, name=f'{joint.dependnode_fn.name()}_aim', parentOnly=True)[0]
-        #     aim_offset = self._add_module(f'{aim_joint}_hrc', self.utils_grp, True)
-        #     aim_vectors = self._add_module(f'{aim_joint}_vectors', aim_offset, True)
-
-        #     cmds.matchTransform(aim_offset.dag_path, aim_joint)
-        #     cmds.parent(aim_joint, aim_vectors.dag_path)
-
-        #     par_main = cmds.parentConstraint(aim_joint, joint.dag_path)
-        #     par_ctrl_aim = cmds.parentConstraint(self._ctrls[i].control.dag_path, aim_offset.dag_path, mo=True)
-
-        #     cmds.parent(par_ctrl_aim, par_main, self.base.joints_utils.dag_path)
-
-        #     if self.previous_vec:
-        #         cmds.aimConstraint(aim_joint, 
-        #                            self.previous_vec.dag_path, 
-        #                            aimVector=(1, 0, 0),
-        #                            worldUpType='object',
-        #                            worldUpObject=up, 
-        #                            worldUpVector=(0, 1, 0))
-
-        #     self.previous_vec = aim_vectors
-
-        #     if not self.first_aim_jnt:
-        #         self.first_aim_jnt = aim_joint
-
-        # if self._parent:
-        #     self.par_aim = cmds.aimConstraint(self.first_aim_jnt, self._parent.previous_vec.dag_path, 
-        #                                     aimVector=(1, 0, 0),
-        #                                     worldUpType='object',
-        #                                     worldUpObject=up,
-        #                                     worldUpVector=(0,1,0))[0]
-
         return
-    
+
+    def _set_replace_hook(self):
+            """
+            Cleans up the parent metaData node and replaces the last joint, control, and aim joint with the current ones.
+
+            Raises:
+                ValueError: If the parent attribute is not set.
+            """
+            if not self._parent:
+                raise ValueError('The replace hook method can only be used if the parent attribute is set.')
+
+            #... Joints cleanup
+            transfer_connections(self._parent.joints[-1], self._joints[0], exclude=[])
+            cmds.delete(self._parent.joints[-1].dag_path)
+
+            #... Ctrls cleanup
+            transfer_connections(self._parent.ctrls[-1], self._ctrls[0].control, exclude=[])
+            cmds.delete(self._parent.ctrls[-1].dag_path)
+
+            self._parent.ctrls.pop(-1)
+
+            #... Aim joints cleanup
+            transfer_connections(self._parent.aim_joints[-1], self._aim_joints[0])
+            transfer_connections(self._parent.aim_offsets[-1], self._aim_offsets[0])
+            transfer_connections(self._parent.aim_vectors[-1], self._aim_vectors[0])
+
+            cmds.delete(self._parent.aim_offsets[-1].dag_path)
+
+            self._parent.aim_joints.pop(-1)
+            self._parent.aim_offsets.pop(-1)
+            self._parent.aim_vectors.pop(-1)
+
+            return
+
     def _create_meta_data(self):
         super()._create_meta_data()
 
+        self.data['module'] = self._rig_module_grp.dag_path
         self.data['joints'] = [joint.dag_path for joint in self._joints]
         self.data['main_ctrl'] = self._main_ctrl.control.dag_path
+        self.data['ctrls'] = [ctrl.control.dag_path for ctrl in self._ctrls]
+        self.data['up_ctrl'] = self._up_ctrl.control.dag_path
+        self.data['aim_joints'] = [joint.dag_path for joint in self._aim_joints]
+        self.data['aim_vectors'] = [vector.dag_path for vector in self._aim_vectors]
+        self.data['aim_offsets'] = [offset.dag_path for offset in self._aim_offsets]
+        self.data['hook_idx'] = self._hook_idx
 
         return self.data
 
@@ -481,6 +532,54 @@ class SkeletonCreator(BaseObject):
     @property
     def up_type(self):
         return self._up_type
+    
+    @property
+    def ctrls(self):
+        return self._ctrls
+    
+    @ctrls.setter
+    def ctrls(self, value):
+        self._ctrls = value
+
+    @property
+    def up_ctrl(self):
+        return self._up_ctrl
+    
+    @up_ctrl.setter
+    def up_ctrl(self, value):
+        self._up_ctrl = value
+
+    @property
+    def aim_joints(self):
+        return self._aim_joints
+    
+    @aim_joints.setter
+    def aim_joints(self, value):
+        self._aim_joints = value
+
+    @property
+    def aim_vectors(self):
+        return self._aim_vectors
+    
+    @aim_vectors.setter
+    def aim_vectors(self, value):
+        self._aim_vectors = value
+
+    @property
+    def aim_offsets(self):
+        return self._aim_offsets
+    
+    @aim_offsets.setter
+    def aim_offsets(self, value):
+        self._aim_offsets = value
+    
+    @property
+    def hook_idx(self):
+        return self._hook_idx
+    
+    @hook_idx.setter
+    def hook_idx(self, value):
+        self._hook_idx = value
         
 
 class Osseous(BaseObject):
@@ -605,7 +704,6 @@ class Osseous(BaseObject):
 
             if self._num_joints == 2:
                 self._num_joints = 3
-
         self.c_joints = Joints(self._name, self._side, self._num_joints).create()
         self.c_joints.radius = 0.1
         self._joints = self.c_joints._joints
