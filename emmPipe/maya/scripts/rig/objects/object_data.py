@@ -39,6 +39,8 @@ class DependencyNodeData:
 
         self._check_if_dag_or_depend_node()
 
+        return
+
     #... Public methods ...#
     def add_attribute(self, attr_name, attr_type, keyable=True):
         """
@@ -56,6 +58,8 @@ class DependencyNodeData:
         attr_fn.writable = True
         attr_fn.keyable = keyable
         self._dependnode_fn.addAttribute(attr)
+
+        return
         
     def add_compound_attribute(self, name, attr_names, attr_type, keyable=True):
         """
@@ -79,6 +83,45 @@ class DependencyNodeData:
         
         self._dependnode_fn.addAttribute(compound_attr)
 
+        return
+
+    def get_connected_nodes(self, plug):
+        """
+        Gets the connected nodes to the given plug.
+        
+        Args:
+            plug (om.MPlug): The plug to get the connected nodes for.
+        
+        Returns:
+            list: A list of connected nodes.
+        """
+        connected_nodes = []
+        if plug.isCompound:
+            for i in range(plug.numChildren()):
+                connected_node = plug.child(i).source().name()
+                connected_nodes.append(connected_node.split('.')[0])
+        else:
+            connected_node = plug.source().name()
+            connected_nodes.append(connected_node.split('.')[0])
+        
+        return connected_nodes
+
+    def get_plug(self, attr_name):
+        """
+        Returns the MPlug object for the given attribute name.
+
+        Args:
+            attr_name (str): The name of the attribute.
+
+        Returns:
+            om.MPlug: The MPlug object.
+        """
+        plug = self.dependnode_fn.findPlug(attr_name, True)
+        if plug:
+            return plug
+        
+        return None
+
     #... Private methods ...#
     def _check_if_dag_or_depend_node(self):
         """
@@ -100,6 +143,7 @@ class DependencyNodeData:
             MObject: The MObject associated with the selected object.
         """
         self._m_obj = self.selection.getDependNode(0)
+        
         return self._m_obj
     
     def _get_dependnode_fn(self):
@@ -110,6 +154,7 @@ class DependencyNodeData:
             om.MFnDependencyNode: The MFnDependencyNode object.
         """
         self._dependnode_fn = om.MFnDependencyNode(self._m_obj)
+        
         return self._dependnode_fn
 
     #... Properties ...#
@@ -136,6 +181,18 @@ class DependencyNodeData:
         self._dependnode_fn = self._get_dependnode_fn()
 
         return self._dependnode_fn
+    
+    @property
+    def plug(self):
+        """
+        Returns a list of plugs for the node.
+
+        Returns:
+            list: A list of plugs for the node.
+        """
+        plugs = self._get_plug()
+        
+        return plugs
 
 
 class DagNodeData(DependencyNodeData):
@@ -235,6 +292,7 @@ class DagNodeData(DependencyNodeData):
                     self._shapes.append(shape_dag_path)
 
             return self._shapes
+
         else:        
             return None
         

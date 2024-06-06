@@ -32,7 +32,7 @@ class RigContrainer(BaseObject):
         modules (DagNodeData): The modules module of the rig container.
     """
     def __init__(self, name) -> None:
-        super().__init__()
+        super().__init__(name, side='c', desc='world', index=0)
 
         self._name = name
 
@@ -96,9 +96,9 @@ class RigContrainer(BaseObject):
         Returns:
             None
         """
-        global_ctrl = Control('global', 'c', '0', 'arrow1way').create()
-        layout_ctrl = Control('layout', 'c', '0', 'circle').create()
-        local_ctrl = Control('local', 'c', '0', 'circle').create()
+        global_ctrl = Control('global', 'c', 'main', 0, 'arrow1way').create()
+        layout_ctrl = Control('layout', 'c', 'main', 0, 'circle').create()
+        local_ctrl = Control('local', 'c', 'main', 0, 'circle').create()
 
         global_ctrl.scale = 10
         layout_ctrl.scale = global_ctrl.scale - (0.2 * global_ctrl.scale)

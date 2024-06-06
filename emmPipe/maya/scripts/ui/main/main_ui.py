@@ -30,6 +30,8 @@ class MainUI(DockableUI):
     def __init__(self):
         super().__init__()
 
+        self.setFixedSize(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
+
         self.c_data = UIPathModel()
         self.c_component = component.Component(self.c_data.component_path)
 

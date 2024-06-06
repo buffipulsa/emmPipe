@@ -445,7 +445,7 @@ QListView::item:selected
 
 QListView::item:selected:!active 
 {
-    background-color: #ff6530;
+    background-color: #6a6ea9;
     border: none;
     color: #000;
 
@@ -454,7 +454,7 @@ QListView::item:selected:!active
 
 QListView::item:selected:active 
 {
-    background-color: #ff6530;
+    background-color: #6a6ea9;
     border: none;
     color: #000;
 

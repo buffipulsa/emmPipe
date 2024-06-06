@@ -18,6 +18,8 @@ class RigWidget(QtWidgets.QWidget):
         c_component (CComponent): The component object.
         parent (QWidget, optional): The parent widget. Defaults to None.
     """
+    closing = QtCore.Signal()
+
     def __init__(self, c_data, c_component, parent=None):
         super().__init__(parent)
 
@@ -25,10 +27,11 @@ class RigWidget(QtWidgets.QWidget):
         self.c_component = c_component
 
         self.c_build = BaseBuild(self.c_component)
-        self.test_dict = self.c_build.data()
+        self.func_dict = self.c_build.data()
 
         self.add_widgets()
         self.add_layouts()
+        self.add_connections()
         
     def add_widgets(self):
 
@@ -36,7 +39,7 @@ class RigWidget(QtWidgets.QWidget):
         self.list_widget.setMaximumHeight(250)
         self.list_widget.setSelectionMode(QtWidgets.QListWidget.NoSelection)
 
-        for key, value in self.test_dict.items():
+        for key, value in self.func_dict.items():
 
             list_widget = QtWidgets.QWidget()
             checkbox = QtWidgets.QCheckBox()
@@ -71,9 +74,19 @@ class RigWidget(QtWidgets.QWidget):
 
             run_button.clicked.connect(value['func'])
             checkbox.stateChanged.connect(lambda state, key=key: self.set_status(key, state))
+            if value['tool'] != None:
+                open_button.clicked.connect(value['tool'])
 
         self.run_all_button = QtWidgets.QPushButton('Run All')
         self.run_all_button.clicked.connect(self.run_all)
+
+    def hide_tool_windows_on_close(self):
+
+        self.func_dict['import_blueprint']['tool_hide']()
+
+    def hideEvent(self, event):
+        self.closing.emit()
+        event.accept()
 
     def add_layouts(self):
         layout = QVBoxLayout(self)
@@ -85,10 +98,10 @@ class RigWidget(QtWidgets.QWidget):
 
     def add_connections(self):
 
-        pass
-        # for widget in self.children():
-        #     if isinstance(widget, QtWidgets.QPushButton):
-        #         widget.clicked.connect(self.update_project_path)
+        self.closing.connect(self.hide_tool_windows_on_close)
+        for widget in self.children():
+            if isinstance(widget, QtWidgets.QPushButton):
+                widget.clicked.connect(self.update_project_path)
 
         # self.import_model_button.clicked.connect(self.import_model)
         # self.import_blueprint_button.clicked.connect(self.import_blueprint)
@@ -103,7 +116,6 @@ class RigWidget(QtWidgets.QWidget):
             status (bool): The status to set.
         """
         self.test_dict[key]['is_checked'] = status
-        print(self.test_dict[key]['is_checked'])
         
     def run_all(self):
         """
@@ -113,7 +125,7 @@ class RigWidget(QtWidgets.QWidget):
             dict (dict): The dictionary of functions to run.
         """
         self.update_project_path()
-        for key, value in self.test_dict.items():
+        for key, value in self.func_dict.items():
             if value['is_checked']:
                 value['func']()
 

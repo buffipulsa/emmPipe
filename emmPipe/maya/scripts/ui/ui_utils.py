@@ -73,10 +73,21 @@ class WorkspaceControl(object):
     def restore_ui(self):
         cmds.workspaceControl(self.name, edit=True, restore=True)
     
+    def close(self):
+        cmds.workspaceControl(self.name, edit=True, close=True)
+    
+    def hide(self):
+        cmds.workspaceControl(self.name, edit=True, visible=False)
+
+    def fixed_size(self, width, height):
+        cmds.workspaceControl(self.name, edit=True, width=width, height=height, widthProperty='fixed', heightProperty='fixed')
 
 class DockableUI(QtWidgets.QWidget):
 
     WINDOW_TITLE = 'DockableUI'
+
+    WINDOW_WIDTH = 350
+    WINDOW_HEIGHT = 1000
 
     ui_instance = None
 
@@ -86,6 +97,17 @@ class DockableUI(QtWidgets.QWidget):
              cls.ui_instance.restore_workspace_control()
         else:
             cls.ui_instance = cls()
+    
+    @classmethod
+    def close(cls):
+        if cls.ui_instance:
+            cls.ui_instance.workspace_control.close()
+            cls.ui_instance = None
+    
+    @classmethod
+    def hide(cls):
+        if cls.ui_instance:
+            cls.ui_instance.workspace_control.hide()
         
     @classmethod
     def get_workspace_control_name(cls):
@@ -98,7 +120,7 @@ class DockableUI(QtWidgets.QWidget):
             module_name = cls.module_name_override
 
         ui_script = "from {0} import {1}\n{1}.display()".format(module_name, cls.__name__)
-        print(ui_script)
+
         return ui_script
 
     def __init__(self):
@@ -110,6 +132,8 @@ class DockableUI(QtWidgets.QWidget):
         self.setObjectName(self.__class__.__name__)
 
         self.create_workspace_control()
+
+        self.workspace_control.fixed_size(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
 
     def add_widgets(self):
         raise NotImplementedError('Subclasses must implement the add_widgets method.')
@@ -195,7 +219,8 @@ class CollapsibleHeader(QtWidgets.QWidget):
     
     def add_layouts(self):
         layout = QtWidgets.QHBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
+        #layout.setContentsMargins(4, 4, 4, 4)
+        layout.setAlignment(QtCore.Qt.AlignTop)
 
         layout.addWidget(self.icon_label)
         layout.addWidget(self.title_label)
@@ -236,19 +261,21 @@ class CollapsibleWidget(QtWidgets.QWidget):
         self.header_widget = CollapsibleHeader(self.title)
 
         self.body_widget = QtWidgets.QWidget()
+        #self.body_widget.setStyleSheet("background-color: red;")  # Make the line edit red
 
         self.scroll_area = QtWidgets.QScrollArea()
         self.scroll_area.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        self.scroll_area.setFixedHeight(250)
+        self.scroll_area.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         self.scroll_area.setWidget(self.body_widget)
     
     def add_layouts(self):
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setAlignment(QtCore.Qt.AlignTop)
 
         self.body_layout = QtWidgets.QVBoxLayout(self.body_widget)
+        self.body_layout.setContentsMargins(0, 0, 0, 0)
         self.body_layout.setAlignment(QtCore.Qt.AlignTop)
 
         self.layout.addWidget(self.header_widget)

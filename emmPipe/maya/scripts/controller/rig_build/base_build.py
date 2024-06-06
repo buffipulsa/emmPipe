@@ -1,7 +1,11 @@
 
+import os
+
 import maya.cmds as cmds
 
 from rig.modules.base import RigContrainer
+from ui.main.widgets.rig_widget.modules_widget import ModulesWidget
+from controller.meta_data.query import MetaDataQuery
 
 class BaseBuild:
 
@@ -13,7 +17,6 @@ class BaseBuild:
             path_object (PathObject): The path object.
         """
         self.path_object = path_object
-
     
     def new_scene(self):
         """
@@ -37,6 +40,23 @@ class BaseBuild:
         Imports the blueprint.
         """
         self.path_object.import_blueprint_component()
+
+    def show_blueprint_tool(self):
+
+        if os.getenv('EMMPIPE_MODE') == 'Development':
+            if cmds.workspaceControl(ModulesWidget.get_workspace_control_name(), q=True, exists=True):
+                cmds.deleteUI(ModulesWidget.get_workspace_control_name())
+        
+                print(f'{ModulesWidget.get_workspace_control_name()} Deleted')
+        
+        ModulesWidget.display()
+    
+    def hide_blueprint_tool(self):
+
+        if os.getenv('EMMPIPE_MODE') == 'Development':
+            ModulesWidget.close()
+        else:
+            ModulesWidget.hide()
         
     def data(self):
         """
@@ -45,9 +65,13 @@ class BaseBuild:
         Returns:
             CData: The data object.
         """
-        data = {'new_scene': {'label': 'New Scene', 'func': self.new_scene, 'is_checked': True},
-                'rig_container': {'label': 'Rig Container', 'func': self.create_rig_container, 'is_checked': True},
-                'import_model': {'label': 'Import Model', 'func': self.import_model, 'is_checked': True},
-                'import_blueprint': {'label': 'Import Blueprint', 'func': self.import_blueprint, 'is_checked': True}}
+        data = {'new_scene': {'label': 'New Scene', 'func': self.new_scene, 'is_checked': True,
+                              'tool': None},
+                'rig_container': {'label': 'Rig Container', 'func': self.create_rig_container, 'is_checked': True,
+                                  'tool': None},
+                'import_model': {'label': 'Import Model', 'func': self.import_model, 'is_checked': True,
+                                 'tool': None},
+                'import_blueprint': {'label': 'Import Blueprint', 'func': self.import_blueprint, 'is_checked': True,
+                                     'tool': self.show_blueprint_tool, 'tool_hide': self.hide_blueprint_tool}}
 
         return data

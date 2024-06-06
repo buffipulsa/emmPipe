@@ -154,6 +154,7 @@ class LauncherUI(ttk.Window):
         """
         Opens and runs Maya using the specified Maya version.
         """
+        self.set_emmpipe_paths()
         self.set_maya_paths()
 
         os.startfile(MayaPaths.get_exe_path(self.get_maya_version()))
