@@ -168,8 +168,6 @@ class SkeletonCreator(BaseObject):
         self._parent_pos = [0, 0, 0]
         self._previous_vec = None
 
-        #print(self._combined_name)
-
     #... Public Methods ...#
     def create(self):
 
@@ -374,6 +372,11 @@ class SkeletonCreator(BaseObject):
     
     def _create_up_ctrl(self):
 
+        if self._up_type == None:
+            self._up_ctrl = None
+
+            return
+
         self._up_ctrl = Control(self._name, self._side, 'up', index=0, shape='diamond').create()
         cmds.parent(self._up_ctrl.offset.dag_path, self._main_ctrl.control.dag_path)
 
@@ -496,7 +499,7 @@ class SkeletonCreator(BaseObject):
         self.data['joints'] = [joint.dag_path for joint in self._joints]
         self.data['main_ctrl'] = self._main_ctrl.control.dag_path
         self.data['ctrls'] = [ctrl.control.dag_path for ctrl in self._ctrls]
-        self.data['up_ctrl'] = self._up_ctrl.control.dag_path
+        self.data['up_ctrl'] = self._up_ctrl.control.dag_path if self._up_ctrl else None
         self.data['aim_joints'] = [joint.dag_path for joint in self._aim_joints]
         self.data['aim_vectors'] = [vector.dag_path for vector in self._aim_vectors]
         self.data['aim_offsets'] = [offset.dag_path for offset in self._aim_offsets]

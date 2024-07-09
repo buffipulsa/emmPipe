@@ -1,5 +1,8 @@
 
+import maya.api.OpenMaya as om
 import maya.cmds as cmds
+
+from functools import partial
 
 from PySide2 import QtCore
 from PySide2 import QtWidgets
@@ -28,80 +31,52 @@ class ModulesWidget(DockableUI):
         self.add_layouts()
         self.add_connections()
 
-        set_stylesheet(self, 'VisualScript')
-
     def add_widgets(self):
 
-        self.coll_widget = CollapsibleWidget('Create skeleton module')
-        self.coll_widget.body_widget.setFixedHeight(280)
-        self.coll_widget.body_widget.setFixedWidth(320)
+        self.skel_creator_coll_widget = CollapsibleWidget('Create skeleton module')
+        self.skel_creator_widget = SkeletonCreatorWidget()
 
-        self.skeleton_creator_widget = SkeletonCreatorWidget(self.coll_widget)
-        self.skeleton_creator_widget.setFixedWidth(self.coll_widget.body_widget.width())
-        self.skeleton_creator_widget.setFixedHeight(self.coll_widget.body_widget.height())
+        self.modules_coll_widget = CollapsibleWidget('Scene modules')
+        self.modules_widget = SkeletonModuleWidget()
 
-        self.side_combo_box = QtWidgets.QComboBox()
-        self.side_combo_box.addItems(['Center', 'Left', 'Right'])
-        
-        self.list_widget = QtWidgets.QListWidget()
-        list_font = QFont()
-        
-        list_font.setPointSize(12)
-        list_font.setFamily('Arial')
-        self.list_widget.setFixedHeight(200)
-        self.list_widget.setFont(list_font)
-
-        for item in MetaDataQuery.skeleton_creator():
-
-            self.list_widget.addItem(item.replace('_metaData', ''))
-
-        self.module_info_widget = SkeletonModuleInfoWidget()
+        self.skel_creator_coll_widget.scroll_area.setWidget(self.skel_creator_widget)
+        self.modules_coll_widget.scroll_area.setWidget(self.modules_widget)
 
         return
 
     def add_layouts(self):
         
-        layout = QtWidgets.QVBoxLayout()
-        layout.setAlignment(QtCore.Qt.AlignTop)
-
-        self.coll_widget.body_layout.addWidget(self.skeleton_creator_widget)
-
-        self.list_widget_settings_layout = QtWidgets.QHBoxLayout()
-        self.list_widget_settings_layout.setAlignment(QtCore.Qt.AlignLeft)
-        self.list_widget_settings_layout.addWidget(QtWidgets.QLabel('Side:'))
-        self.list_widget_settings_layout.addWidget(self.side_combo_box)
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
         
-        layout.addWidget(self.coll_widget)
-        layout.addLayout(self.list_widget_settings_layout)
-        layout.addWidget(self.list_widget)
-        layout.addWidget(self.module_info_widget)
-
-        layout.addStretch()    
-        self.setLayout(layout)
+        layout.addWidget(self.skel_creator_coll_widget)
+        layout.addWidget(self.modules_coll_widget)
+        layout.addStretch()
 
         return
 
     def add_connections(self):
-        
-        self.list_widget.itemClicked.connect(self.set_meta_node)
-        self.list_widget.itemClicked.connect(self.select_module)
+
+        self.modules_widget.modules_list_widget.itemClicked.connect(self.select_module)
+
+        self.skel_creator_widget.add_connections()
+        self.modules_widget.add_connections()
 
         return
 
     def set_meta_node(self):
 
-        self.meta_node = DependencyNodeData(f'{self.list_widget.currentItem().text()}_metaData')
+        self.meta_node = DependencyNodeData(f'{self.modules_widget.modules_list_widget.currentItem().text()}_metaData')
+        self.modules_widget.meta_node = self.meta_node
 
         return
 
     def select_module(self):
-
+        self.modules_widget.clear_module()
+        self.set_meta_node()
         cmds.select(self.meta_node.get_connected_nodes(self.meta_node.get_plug('__module')))
-        self.module_info_widget.set_module(self.meta_node)
-    
-    def select_joints(self):
+        self.modules_widget.set_module()
 
-        cmds.select(self.meta_node.get_connected_nodes(self.meta_node.get_plug('__joints')))
 
 class SkeletonCreatorWidget(QtWidgets.QWidget):
 
@@ -110,7 +85,6 @@ class SkeletonCreatorWidget(QtWidgets.QWidget):
 
         self.add_widgets()
         self.add_layouts()
-        self.add_connections()
 
         return
 
@@ -153,13 +127,11 @@ class SkeletonCreatorWidget(QtWidgets.QWidget):
     def add_layouts(self):
         
         self.layout = QtWidgets.QFormLayout()
-        self.layout.setLabelAlignment(QtCore.Qt.AlignLeft)
-
         self.layout.addRow(self.skeleton_base_button)
         self.layout.addRow('Name:', self.name_line_edit)
         self.layout.addRow('Side:', self.side_combo_box)
         self.layout.addRow('Index:', self.index_spin_box)
-        self.layout.addRow('# of Joints:', self.num_joints_spin_box)
+        self.layout.addRow('Joints:', self.num_joints_spin_box)
         self.layout.addRow('Parent:', self.parent_combo_box)
         self.layout.addRow('Up Type:', self.up_type_combo_box)
         self.layout.addRow('Hook Index:', self.hook_idx_spin_box)
@@ -220,86 +192,112 @@ class SkeletonCreatorWidget(QtWidgets.QWidget):
         self.reset_fields()
 
         return
+
+class SkeletonModuleWidget(QtWidgets.QWidget):
     
+        def __init__(self, parent=None):
+            super().__init__(parent)
+    
+            self.add_widgets()
+            self.add_layouts()
 
-class SkeletonModuleInfoWidget(QtWidgets.QWidget):
+            self.row_data = {}
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
+            return
+    
+        def add_widgets(self):
 
-        self.add_widgets()
-        self.add_layouts()
-        self.add_connections()
+            self.side_label = QtWidgets.QLabel('Side:')
 
-        return
+            self.side_combo_box = QtWidgets.QComboBox()
+            self.side_combo_box.addItems(['Center', 'Left', 'Right'])
+            
+            self.modules_list_widget = QtWidgets.QListWidget()
+            list_font = QFont()
+            list_font.setPointSize(12)
+            list_font.setFamily('Arial')
+            self.modules_list_widget.setFont(list_font)
 
-    def add_widgets(self):
+            for item in MetaDataQuery.skeleton_creator():
 
-        self.name_label = QtWidgets.QLabel('Name:')
-        self.name_value = QtWidgets.QLabel()
+                self.modules_list_widget.addItem(item.replace('_metaData', ''))
 
-        self.side_label = QtWidgets.QLabel('Side:')
-        self.side_value = QtWidgets.QLabel()
+            self.module_data_label = QtWidgets.QLabel('Module Data')
+        
+            self.data_picker = QtWidgets.QComboBox()
+            self.data_picker.addItems(['All', 'Modules', 'Joints', 'Controls', 'Utils'])
 
-        self.index_label = QtWidgets.QLabel('Index:')
-        self.index_value = QtWidgets.QLabel()
+            self.data_list_widget = QtWidgets.QListWidget()
+            list_font = QFont()
+            list_font.setPointSize(12)
+            list_font.setFamily('Arial')
+            self.data_list_widget.setFont(list_font)
+    
+            return
+    
+        def add_layouts(self):
+            
+            layout = QtWidgets.QVBoxLayout(self)
+            layout.setContentsMargins(10, 10, 10, 10)
 
-        self.num_joints_label = QtWidgets.QLabel('# of Joints:')
-        self.num_joints_value = QtWidgets.QLabel()
+            setting_layout = QtWidgets.QHBoxLayout()
+            setting_layout.addWidget(self.side_label)
+            setting_layout.addWidget(self.side_combo_box)
+            setting_layout.addStretch()
 
-        self.parent_label = QtWidgets.QLabel('Parent:')
-        self.parent_value = QtWidgets.QLabel()
+            top_layout = QtWidgets.QHBoxLayout()
+            top_layout.addWidget(self.module_data_label)
+            top_layout.addWidget(self.data_picker)
+            top_layout.addStretch()
 
-        self.up_type_label = QtWidgets.QLabel('Up Type:')
-        self.up_type_value = QtWidgets.QLabel()
+            layout.addLayout(setting_layout)
+            layout.addWidget(self.modules_list_widget)
+            layout.addLayout(top_layout)
+            layout.addWidget(self.data_list_widget)
 
-        self.hook_idx_label = QtWidgets.QLabel('Hook Index:')
-        self.hook_idx_value = QtWidgets.QLabel()
+            layout.addStretch()
 
-        self.replace_hook_label = QtWidgets.QLabel('Replace Hook:')
-        self.replace_hook_value = QtWidgets.QLabel()
+            return
+        
+        def add_connections(self):
 
-        return
+            self.data_picker.currentIndexChanged.connect(self.set_data_visibility)
+            self.data_list_widget.itemClicked.connect(self.select_data)
 
-    def add_layouts(self):
+            return
+        
+        def set_module(self):
 
-        self.layout = QtWidgets.QFormLayout()
-        self.layout.setLabelAlignment(QtCore.Qt.AlignLeft)
+            data = MetaDataQuery.meta_node_attrs_values(self.meta_node.dependnode_fn.name())
 
-        self.layout.addRow(self.name_label, self.name_value)
-        self.layout.addRow(self.side_label, self.side_value)
-        self.layout.addRow(self.index_label, self.index_value)
-        self.layout.addRow(self.num_joints_label, self.num_joints_value)
-        self.layout.addRow(self.parent_label, self.parent_value)
-        self.layout.addRow(self.up_type_label, self.up_type_value)
-        self.layout.addRow(self.hook_idx_label, self.hook_idx_value)
-        self.layout.addRow(self.replace_hook_label, self.replace_hook_value)
+            self.row_data.clear()
+            for i, attr in enumerate(data.keys()):
+                self.data_list_widget.addItem(attr.replace("__",""))
 
-        self.setLayout(self.layout)
+                self.row_data[attr] = {'widget_item': self.data_list_widget.item(i), 'value': data[attr]['data'][0], 'category': data[attr]['category']}
+            
+            self.set_data_visibility()
 
-        return
+        def clear_module(self):
 
-    def add_connections(self):
+            self.data_list_widget.clear()
 
-        return
+            return
 
-    def set_module(self, meta_node):
-        """
-        Sets the values of the module widget based on the provided module object.
+        def set_data_visibility(self):
 
-        Args:
-            module (Module): The module object containing the data to be displayed.
+            for key in self.row_data.keys():
+                if self.data_picker.currentText() == 'All':
+                    self.row_data[key]['widget_item'].setHidden(False)
+                else:
+                    if self.row_data[key]['category'] == self.data_picker.currentText().lower():
+                        self.row_data[key]['widget_item'].setHidden(False)
+                    else:
+                        self.row_data[key]['widget_item'].setHidden(True)
 
-        Returns:
-            None
-        """
-        #self.name_value.setText(meta_node.name)
-        self.side_value.setText(meta_node.side)
-        self.index_value.setText(str(meta_node.index))
-        self.num_joints_value.setText(str(meta_node.num_joints))
-        self.parent_value.setText(meta_node.parent)
-        self.up_type_value.setText(meta_node.up_type)
-        self.hook_idx_value.setText(str(meta_node.hook_idx))
-        self.replace_hook_value.setText(str(meta_node.replace_hook))
+        def select_data(self):
 
-        return
+            sender = self.sender()
+            sender_item = sender.item(sender.currentRow()).text()
+            cmds.select(self.row_data[sender_item]['value'])
+

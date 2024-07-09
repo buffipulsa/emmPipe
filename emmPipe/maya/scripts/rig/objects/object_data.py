@@ -1,6 +1,4 @@
 
-import importlib
-
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
 

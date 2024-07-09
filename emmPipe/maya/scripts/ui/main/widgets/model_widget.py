@@ -39,11 +39,14 @@ class ModelWidget(QtWidgets.QWidget):
         """
         Add layouts to the widget.
         """
-        layout = QVBoxLayout(self, alignment=QtCore.Qt.AlignTop)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
 
         layout.addWidget(self.import_button)
         layout.addWidget(self.open_button)
         layout.addWidget(self.reference_button)
+
+        layout.addStretch()
 
     def add_connections(self):
         """

@@ -24,7 +24,7 @@ class MainUI(DockableUI):
 
     WINDOW_TITLE = 'emmPipe'
 
-    WINDOW_WIDTH = 350
+    WINDOW_WIDTH = 400
     WINDOW_HEIGHT = 1000
 
     def __init__(self):
@@ -39,13 +39,12 @@ class MainUI(DockableUI):
         self.add_layouts()
         self.add_connections()
 
-        set_stylesheet(self, 'VisualScript')
+        #set_stylesheet(self, 'VisualScript')
 
     def add_widgets(self):
         """
         Adds the widgets to the main UI.
         """
-
         self.tab_bar = CustomTabBar(self)
         self.tab_bar.setFixedWidth(self.WINDOW_WIDTH)
 
@@ -63,8 +62,10 @@ class MainUI(DockableUI):
         """
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        
 
-        layout.addWidget(self.tab_bar, alignment=QtCore.Qt.AlignTop)
+        layout.addWidget(self.tab_bar)
 
     def add_connections(self):
         """
@@ -101,21 +102,23 @@ class CustomTabBar(QtWidgets.QWidget):
     
         self.tab_bar = QTabBar()
         self.stacked_widget = QStackedWidget()
-        self.stacked_widget.setFixedHeight(self.parent.height())
+        self.stacked_widget.setFixedHeight(self.parent.height() - 25)
     
     def add_layouts(self):
+
         layout = QVBoxLayout(self)
-        layout.addStretch()
+        layout.setContentsMargins(0, 0, 0, 0)
 
         layout.addWidget(self.tab_bar)
         layout.addWidget(self.stacked_widget)
 
     def add_connections(self):
+         
          self.tab_bar.currentChanged.connect(self.stacked_widget.setCurrentIndex)
 
     def add_tab(self, widget, label):
-        self.tab_bar.addTab(label)
 
+        self.tab_bar.addTab(label)
         self.stacked_widget.addWidget(widget)
 
 

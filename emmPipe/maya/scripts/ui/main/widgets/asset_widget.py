@@ -61,6 +61,7 @@ class AssetWidget(QtWidgets.QWidget):
         Add layouts to the widget.
         """
         layout = QVBoxLayout(self, alignment=QtCore.Qt.AlignTop)
+        layout.setContentsMargins(10, 10, 10, 10)
 
         label_layout = QHBoxLayout()
 

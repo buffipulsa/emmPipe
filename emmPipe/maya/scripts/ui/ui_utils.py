@@ -87,7 +87,7 @@ class DockableUI(QtWidgets.QWidget):
     WINDOW_TITLE = 'DockableUI'
 
     WINDOW_WIDTH = 350
-    WINDOW_HEIGHT = 1000
+    WINDOW_HEIGHT = 500
 
     ui_instance = None
 
@@ -207,20 +207,23 @@ class CollapsibleHeader(QtWidgets.QWidget):
     def add_widgets(self):
 
         self.icon_label = QtWidgets.QLabel()
-        self.icon_label.setFixedWidth(self.COLLAPSED_PIXMAD.width())
-        self.icon_label.setFixedHeight(self.COLLAPSED_PIXMAD.height())
+        self.icon_label.setContentsMargins(0, 0, 0, 0)
+        self.icon_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.icon_label.setFixedWidth(self.COLLAPSED_PIXMAD.width() + 20)
+        self.icon_label.setFixedHeight(self.COLLAPSED_PIXMAD.height() + 10)
         self.icon_label.setStyleSheet(f'background-color: {self.LABEL_COLOR};')
 
         self.title_label = QtWidgets.QLabel()
+        self.title_label.setContentsMargins(0, 0, 0, 0)
         self.title_label.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
-        self.title_label.setFixedHeight(self.COLLAPSED_PIXMAD.height())
+        self.title_label.setFixedHeight(self.COLLAPSED_PIXMAD.height() + 10)
         self.title_label.setStyleSheet(f'background-color: {self.LABEL_COLOR};')
 
     
     def add_layouts(self):
         layout = QtWidgets.QHBoxLayout(self)
-        #layout.setContentsMargins(4, 4, 4, 4)
-        layout.setAlignment(QtCore.Qt.AlignTop)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         layout.addWidget(self.icon_label)
         layout.addWidget(self.title_label)
@@ -260,23 +263,14 @@ class CollapsibleWidget(QtWidgets.QWidget):
 
         self.header_widget = CollapsibleHeader(self.title)
 
-        self.body_widget = QtWidgets.QWidget()
-        #self.body_widget.setStyleSheet("background-color: red;")  # Make the line edit red
-
         self.scroll_area = QtWidgets.QScrollArea()
         self.scroll_area.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.scroll_area.setWidget(self.body_widget)
+        #self.scroll_area.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
     
     def add_layouts(self):
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setAlignment(QtCore.Qt.AlignTop)
-
-        self.body_layout = QtWidgets.QVBoxLayout(self.body_widget)
-        self.body_layout.setContentsMargins(0, 0, 0, 0)
-        self.body_layout.setAlignment(QtCore.Qt.AlignTop)
 
         self.layout.addWidget(self.header_widget)
         self.layout.addWidget(self.scroll_area)

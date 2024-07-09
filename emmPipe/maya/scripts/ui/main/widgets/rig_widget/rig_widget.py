@@ -89,12 +89,14 @@ class RigWidget(QtWidgets.QWidget):
         event.accept()
 
     def add_layouts(self):
-        layout = QVBoxLayout(self)
-        layout.setAlignment(QtCore.Qt.AlignTop)
-        layout.setContentsMargins(5, 5, 5, 5)
-        
+        layout = QVBoxLayout()
+        layout.setContentsMargins(10, 10, 10, 10)
+
         layout.addWidget(self.list_widget)
+        layout.addStretch()
         layout.addWidget(self.run_all_button)
+
+        self.setLayout(layout)
 
     def add_connections(self):
 
