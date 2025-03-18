@@ -27,48 +27,13 @@ class DependencyNodeData:
         """
         if not node:
             raise TypeError('No node assigned')
-        
-        self.selection = om.MSelectionList()
-        self.selection.add(node)
 
-        self._m_obj = self._get_m_obj()
-        
-        self._dependnode_fn = self._get_dependnode_fn()
-
-        self._check_if_dag_or_depend_node()
-
-    #... Private methods ...#
-    def _check_if_dag_or_depend_node(self):
-        """
-        Checks if the node is a DAG node or a dependency node.
-        
-        Raises a ValueError if the node is a DAG node, suggesting the use of the DagNodeData class instead.
-        """
         try:
-            if self.selection.getDagPath(0).isValid():
-                raise ValueError(f'{self._dependnode_fn.name()} is a DAG node. Please use the DagNodeData class instead.')
-        except:
-            return False
+            self._m_obj = om.MSelectionList().add(node).getDependNode(0)
+        except RuntimeError:
+            raise ValueError(f'No valid node found for {node}')
 
-    def _get_m_obj(self):
-        """
-        Get the MObject associated with the selected object.
-
-        Returns:
-            MObject: The MObject associated with the selected object.
-        """
-        self._m_obj = self.selection.getDependNode(0)
-        return self._m_obj
-    
-    def _get_dependnode_fn(self):
-        """
-        Returns the MFnDependencyNode object associated with the current object.
-
-        Returns:
-            om.MFnDependencyNode: The MFnDependencyNode object.
-        """
         self._dependnode_fn = om.MFnDependencyNode(self._m_obj)
-        return self._dependnode_fn
 
     #... Properties ...#
     @property
@@ -79,8 +44,6 @@ class DependencyNodeData:
         Returns:
             MObject: The MObject associated with this object.
         """
-        self._m_obj = self._get_m_obj()
-
         return self._m_obj
     
     @property
@@ -91,8 +54,6 @@ class DependencyNodeData:
         Returns:
             om.MFnDependencyNode: The MFnDependencyNode object.
         """
-        self._dependnode_fn = self._get_dependnode_fn()
-
         return self._dependnode_fn
 
 
@@ -125,52 +86,35 @@ class DagNodeData(DependencyNodeData):
         """
         super().__init__(node=node)
 
-        self._shapes = []
-        self._shapes_fn = []
-        self._transform_fn = None
-        self._vtx_components = []
-        self._vtx_ids = []
-        self._vtx_counts = []
+        if not self._m_obj.hasFn(om.MFn.kDagNode):
+            raise ValueError(f'{node} is a not a DAG node. Please use the DependencyNodeData class instead.')
 
         self._dag_path = self._get_dag_path()
-
-        if self._dag_path:
-            self._transform_fn = self._get_transform_fn()
-            self._shapes = self._get_shapes()
-
-            if self._shapes:
-                self._shapes_fn = self._get_shapes_fn()
-                self._vtx_component = self._get_vtx_component()
-                self._vtx_ids = self._get_vtx_ids()
-                self._vtx_counts = self._get_vtx_counts()
+        self._transform_fn = self._get_transform_fn()
+        self._shapes = self._get_shapes()
+        self._shapes_fn = self._get_shapes_fn()
+        self._vtx_component = self._get_vtx_component()
+        self._vtx_ids = self._get_vtx_ids()
+        self._vtx_counts = self._get_vtx_counts()
 
     #... Private methods ...#
-    def _check_if_dag_or_depend_node(self):
-        """
-        Checks if the node is a DAG node or a dependency node.
-
-        Raises:
-            ValueError: If the node is a dependency node.
-        """
-        if not self.selection.getDagPath(0).isValid():
-            raise ValueError(f'{self._dependnode_fn.name()} is a Dependency node. Please use the DependencyNodeData class instead.')
-
     def _get_dag_path(self):
         """
         Retrieves the MDagPath for the node.
 
         Returns:
             om.MDagPath: The MDagPath for the node.
-
-        Raises:
-            ValueError: If no valid dag path is found for the node.
         """
-        if self.selection.getDagPath(0).isValid():
-            return self.selection.getDagPath(0)
-        else:
-            raise ValueError('No valid dag path found for {}'.format(self.dependnode_fn.name()))
+        return om.MDagPath.getAPathTo(self._m_obj)
 
-        return False
+    def _get_transform_fn(self):
+        """
+        Retrieves the MFnTransform for the node.
+
+        Returns:
+            om.MFnTransform: The MFnTransform for the node.
+        """
+        return om.MFnTransform(self._dag_path) if self._dag_path.apiType() == om.MFn.kTransform else None
 
     def _get_shapes(self):
         """
@@ -182,31 +126,11 @@ class DagNodeData(DependencyNodeData):
         Raises:
             ValueError: If the object has no shape node.
         """
-        if self._shapes:
-            self._shapes.clear()
-
-        if self._dag_path.childCount():
-            for i in range(self._dag_path.childCount()):
-                child_mobj = self._dag_path.child(i)
-                if child_mobj.hasFn(om.MFn.kShape) and not om.MFnDagNode(child_mobj).isIntermediateObject:
-                    shape_dag_path = om.MFnDagNode(child_mobj).getPath()
-                    self._shapes.append(shape_dag_path)
-
-            return self._shapes
-        else:        
-            return None
-        
-    def _get_transform_fn(self):
-        """
-        Retrieves the MFnTransform for the node.
-
-        Returns:
-            om.MFnTransform: The MFnTransform for the node.
-        """
-        if self._dag_path.apiType() == om.MFn.kTransform:
-            self._transform_fn = om.MFnTransform(self._dag_path)
-
-        return self._transform_fn
+        return [
+            om.MFnDagNode(self._dag_path.child(i)).getPath()
+            for i in range(self._dag_path.childCount())
+            if self._dag_path.child(i).hasFn(om.MFn.kShape) and not om.MFnDagNode(self._dag_path.child(i)).isIntermediateObject
+        ]
 
     def _get_shapes_fn(self):
         """
@@ -215,8 +139,7 @@ class DagNodeData(DependencyNodeData):
         Returns:
             om.MFnMesh or om.MFnNurbsCurve or om.MFnNurbsSurface: The function set for the shape node.
         """
-        self._shapes_fn.clear()
-
+        shapes_fn = []
         if self._shapes:
             for shape in self._shapes:
                 if shape.hasFn(om.MFn.kMesh):
@@ -231,13 +154,12 @@ class DagNodeData(DependencyNodeData):
                     return None
                 
                 fn_set.setObject(shape)
-                self._shapes_fn.append(fn_set)
+                shapes_fn.append(fn_set)
 
-            return self._shapes_fn
-        
+            return shapes_fn
         else:
             return None
-        
+
     def _get_vtx_component(self):
         """
         Retrieves the vertex component for the shape node.
@@ -245,8 +167,7 @@ class DagNodeData(DependencyNodeData):
         Returns:
             om.MObject: The vertex component for the shape node.
         """
-        self._vtx_components.clear()
-
+        vtx_components = []
         if self.shapes_fn:
             for shape_fn in self._shapes_fn:
                 if shape_fn.type() == om.MFn.kMesh:
@@ -264,12 +185,9 @@ class DagNodeData(DependencyNodeData):
                     vtx_component = comp.create(om.MFn.kSurfaceCVComponent)
                     comp.setCompleteData(shape_fn.numCVsInU, shape_fn.numCVsInV)
 
-                self._vtx_components.append(vtx_component)
+                vtx_components.append(vtx_component)
 
-            return self._vtx_components
-
-        else:
-            return None
+            return vtx_components
         
     def _get_vtx_ids(self):
         """
@@ -278,19 +196,18 @@ class DagNodeData(DependencyNodeData):
         Returns:
             list: The vertex IDs for the shape node.
         """
-        self._vtx_ids.clear()
+        vtx_ids = []
         
         if self.shapes_fn:
             for shape_fn in self._shapes_fn:
                 if shape_fn.type() == om.MFn.kMesh:
-                    self._vtx_id = range(0, len(cmds.ls('{}.vtx[*]'.format(self.dependnode_fn.name()), fl=True)))
+                    vtx_id = range(0, len(cmds.ls('{}.vtx[*]'.format(self.dependnode_fn.name()), fl=True)))
                 else:
-                    self._vtx_id = range(0, len(cmds.ls('{}.cv[*]'.format(self.dependnode_fn.name()), fl=True)))
+                    vtx_id = range(0, len(cmds.ls('{}.cv[*]'.format(self.dependnode_fn.name()), fl=True)))
 
-                self._vtx_ids.append(self._vtx_id)
+                vtx_ids.append(vtx_id)
 
-            return self._vtx_ids
-        
+            return vtx_ids
         else:
             return None
         
@@ -301,18 +218,7 @@ class DagNodeData(DependencyNodeData):
         Returns:
             int: The vertex count for the shape node.
         """
-        self._vtx_counts.clear()
-
-        if self.vtx_ids:
-            for vtx_id in self._vtx_ids:
-                vtx_count = len(vtx_id)
-
-                self._vtx_counts.append(vtx_count)
-
-            return self._vtx_counts
-    
-        else:
-            return None
+        return [len(vtx_id) for vtx_id in self._vtx_ids]
 
     #... Properties ...#
     @property
@@ -323,7 +229,6 @@ class DagNodeData(DependencyNodeData):
         Returns:
             om.MDagPath: The MDagPath for the node.
         """
-        self._dag_path = self._get_dag_path()
         return self._dag_path
         
     @property
@@ -334,7 +239,6 @@ class DagNodeData(DependencyNodeData):
         Returns:
             List[om.MObject]: List of shape nodes for the node.
         """
-        self._shapes = self._get_shapes()
         return self._shapes
 
     @property
@@ -345,7 +249,6 @@ class DagNodeData(DependencyNodeData):
         Returns:
             om.MFnTransform: The MFnTransform for the node.
         """
-        self._transform_fn = self._get_transform_fn()
         return self._transform_fn
     
     @property
@@ -356,7 +259,6 @@ class DagNodeData(DependencyNodeData):
         Returns:
             om.MFnMesh or om.MFnNurbsCurve or om.MFnNurbsSurface: The function set for the shape node.
         """
-        self._shapes_fn = self._get_shapes_fn()
         return self._shapes_fn
 
     @property
@@ -367,7 +269,6 @@ class DagNodeData(DependencyNodeData):
         Returns:
             om.MObject: The vertex component for the shape node.
         """
-        self._vtx_component = self._get_vtx_component()
         return self._vtx_component
     
     @property
@@ -378,7 +279,6 @@ class DagNodeData(DependencyNodeData):
         Returns:
             list: The vertex IDs for the shape node.
         """
-        self._vtx_ids = self._get_vtx_ids()
         return self._vtx_ids
     
     @property
@@ -389,7 +289,6 @@ class DagNodeData(DependencyNodeData):
         Returns:
             int: The vertex count for the shape node.
         """
-        self._vtx_counts = self._get_vtx_count()
         return self._vtx_counts
 
 

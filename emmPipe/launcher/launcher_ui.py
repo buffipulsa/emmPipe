@@ -76,7 +76,7 @@ class LauncherUI(ttk.Window):
         self.maya_version_cbox = CustomComboBox(self, values=MayaPaths.get_version())
 
         self.unreal_engine_button = UnrealEngineIconButton(self, command=self.run_unreal_engine)
-        self.unreal_engine_version_cbox = CustomComboBox(self, values=UnrealEnginePaths.get_version())
+        #self.unreal_engine_version_cbox = CustomComboBox(self, values=UnrealEnginePaths.get_version())
 
         return
     
@@ -88,7 +88,7 @@ class LauncherUI(ttk.Window):
         self.maya_version_cbox.grid(row=2, column=0, padx=10, pady=10)
         
         self.unreal_engine_button.grid(row=1, column=1, padx=10, pady=10)
-        self.unreal_engine_version_cbox.grid(row=2, column=1, padx=10, pady=10)
+        #self.unreal_engine_version_cbox.grid(row=2, column=1, padx=10, pady=10)
 
     def set_emmpipe_paths(self):
 
